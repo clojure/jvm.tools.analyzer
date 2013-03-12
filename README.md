@@ -1,4 +1,4 @@
-Clojars Dependency: `[analyze "0.3.0"]`
+Clojars Dependency: `[org.clojure/jvm.tools.analyzer "0.3.0"]`
 
 # Interface to Clojure's Analyzer
 
