@@ -516,8 +516,7 @@
     (let [body (analysis->map (.body obm) env)]
       (merge
         {:op :new-instance-method
-         :env (assoc env
-                     :line (.line obm))
+         :env (env-location env expr)
          :name (symbol (field Compiler$NewInstanceMethod name obm))
          :required-params (map analysis->map 
                                (concat [((field Compiler$ObjMethod indexlocals obm) 0)]
@@ -556,8 +555,7 @@
     (let [methods (map analysis->map (.methods expr) (repeat env))]
       (merge
         {:op :fn-expr
-         :env (assoc env 
-                     :line (.line expr))
+         :env (env-location env expr)
          :methods methods
          :variadic-method (when-let [variadic-method (.variadicMethod expr)]
                             (analysis->map variadic-method env))
@@ -578,9 +576,7 @@
       (merge
         {:op :deftype*
          :name (symbol (.name expr))
-         :env (merge env 
-                     {:line (.line expr)}
-                     (when-column-map expr))
+         :env (env-location env expr)
          :methods methods
          :mmap (field Compiler$NewInstanceExpr mmap expr)
 
