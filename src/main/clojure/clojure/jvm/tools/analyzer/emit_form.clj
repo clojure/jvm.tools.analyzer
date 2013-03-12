@@ -1,5 +1,5 @@
-(ns analyze.emit-form
-  (:require [analyze.core :refer [ast]]))
+(ns clojure.jvm.tools.analyzer.emit-form
+  (:require [clojure.jvm.tools.analyzer :refer [ast]]))
 
 (def emit-default ::emit-default)
 

@@ -1,6 +1,6 @@
 (set! *warn-on-reflection* true)
 
-(ns analyze.core
+(ns clojure.jvm.tools.analyzer
   "Interface to Compiler's analyze.
   Entry point `analyze-path` and `analyze-one`"
   (:import (java.io LineNumberReader InputStreamReader PushbackReader)
@@ -19,7 +19,7 @@
             [clojure.java.io :as io]
             [clojure.repl :as repl]
             [clojure.string :as string]
-            [analyze.util :as util]))
+            [clojure.jvm.tools.analyzer.util :as util]))
 
 (def CHILDREN (atom false))
 (def JAVA-OBJ (atom false))

@@ -1,5 +1,5 @@
-(ns analyze.examples.tail-recursion
-  (:require [analyze.core :as analyze]))
+(ns clojure.jvm.tools.analyzer.examples.tail-recursion
+  (:require [clojure.jvm.tools.analyzer :as analyze]))
 
 ;; ## Utility functions
 
@@ -37,19 +37,21 @@
         tail-ops (find-tail-ops fn-tree)]
     (boolean (when fn-name (some (partial = fn-name) tail-ops)))))
 
+(comment
+  (reset! analyze/CHILDREN true)
+
 (def analyzed
-  (binding [analyze/*children* true]
-    (doall (map #(apply analyze/analyze-path %)
-                '[["clojure/test.clj" clojure.test]
-                  ["clojure/set.clj" clojure.set]
-                  ["clojure/java/io.clj" clojure.java.io]
-                  ["clojure/stacktrace.clj" clojure.stacktrace]
-                  ["clojure/pprint.clj" clojure.pprint]
-                  ["clojure/walk.clj" clojure.walk]
-                  ["clojure/string.clj" clojure.string]
-                  ["clojure/repl.clj" clojure.repl]
-                  ["clojure/core/protocols.clj" clojure.core.protocols]
-                  ["clojure/template.clj" clojure.template]]))))
+  (doall (map analyze/analyze-ns
+              '[clojure.test
+                clojure.set
+                clojure.java.io
+                clojure.stacktrace
+                clojure.pprint
+                clojure.walk
+                clojure.string
+                clojure.repl
+                clojure.core.protocols
+                clojure.template])))
 
 (doseq [exprs analyzed
         exp (filter (comp #{:def :fn-expr} :op) exprs)]
@@ -58,7 +60,6 @@
              (or (-> exp :name)
                  (-> exp :var)))))
 
-(comment
   (require 'clojure.pprint)
   (tail-recursive?
    (analyze/analyze-one {:ns {:name 'clojure.repl} :context :eval}

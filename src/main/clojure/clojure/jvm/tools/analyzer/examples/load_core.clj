@@ -1,6 +1,8 @@
-(ns analyze.examples.load-core
+(ns clojure.jvm.tools.analyzer.examples.load-core
   (:import [clojure.lang Compiler RT DynamicClassLoader])
-  (:require [analyze.core :as analyze]))
+  (:require [clojure.jvm.tools.analyzer :as analyze]))
+
+(comment
 
 ;; Reproducible problem, similar to the one we're having loading clojure.core
 
@@ -45,3 +47,4 @@
 ;	clojure.lang.Compiler.analyze (Compiler.java:6216)
 
 ;(def a (analyze/analyze-path "clojure/core.clj" 'clojure.core))
+  )

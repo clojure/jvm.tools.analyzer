@@ -1,5 +1,5 @@
-(ns analyze.examples.privatevars
-  (:require [analyze.core :as analyze]
+(ns clojure.jvm.tools.analyzer.examples.privatevars
+  (:require [clojure.jvm.tools.analyzer :as analyze]
             [clojure.set :as set]
             [clojure.pprint :as pp]))
 
@@ -27,19 +27,22 @@
       (when-not (get v-count pvar)
         (println "Private variable" pvar "is never used")))))
 
+(comment
 (def analyzed
-  (map #(apply analyze/analyze-path %) 
-       '[["clojure/test.clj" clojure.test]
-         ["clojure/set.clj" clojure.set]
-         ["clojure/java/io.clj" clojure.java.io]
-         ["clojure/stacktrace.clj" clojure.stacktrace]
-         ["clojure/pprint.clj" clojure.pprint]
-         ["clojure/walk.clj" clojure.walk]
-         ["clojure/string.clj" clojure.string]
-         ["clojure/repl.clj" clojure.repl]
-         ["clojure/core/protocols.clj" clojure.core.protocols]
-         ["clojure/template.clj" clojure.template]
-         ["analyze/examples/privatevars.clj" analyze.examples.privatevars]]))
+  (doall
+    (map analyze/analyze-ns
+       '[clojure.test
+         clojure.set
+         clojure.java.io
+         clojure.stacktrace
+         clojure.pprint
+         clojure.walk
+         clojure.string
+         clojure.repl
+         clojure.core.protocols
+         clojure.template
+         clojure.jvm.tools.analyzer.examples.privatevars])))
 
 (doseq [exprs analyzed]
   (check-usage-of-private-vars exprs))
+  )

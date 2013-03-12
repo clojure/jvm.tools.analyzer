@@ -1,7 +1,7 @@
-(ns analyze.examples.side-effect
+(ns clojure.jvm.tools.analyzer.examples.side-effect
   "Warns on invocations of `set!` inside transactions.
   Entry point `forbid-side-effects-in-transaction`"
-  (:require [analyze.core :as analyze]
+  (:require [clojure.jvm.tools.analyzer :as analyze]
             [clojure.reflect :as reflect]))
 
 (def transaction-method
@@ -27,20 +27,19 @@
 
 ;; Check a chunk of the core library
 
+(comment
 (def analyzed
-  (binding [analyze/*children* true]
-    (doall
-      (map #(apply analyze/analyze-path %) 
-           '[["clojure/test.clj" clojure.test]
-             ["clojure/set.clj" clojure.set]
-             ["clojure/java/io.clj" clojure.java.io]
-             ["clojure/stacktrace.clj" clojure.stacktrace]
-             ["clojure/pprint.clj" clojure.pprint]
-             ["clojure/walk.clj" clojure.walk]
-             ["clojure/string.clj" clojure.string]
-             ["clojure/repl.clj" clojure.repl]
-             ["clojure/core/protocols.clj" clojure.core.protocols]
-             ["clojure/template.clj" clojure.template]]))))
+  (doall (map analyze/analyze-ns
+              '[clojure.test
+                clojure.set
+                clojure.java.io
+                clojure.stacktrace
+                clojure.pprint
+                clojure.walk
+                clojure.string
+                clojure.repl
+                clojure.core.protocols
+                clojure.template])))
 
 (doseq [exprs analyzed
         exp exprs]
@@ -48,11 +47,13 @@
 
 ;; Check individual form
 
-(forbid-side-effects-in-transaction
-  (binding [analyze/*children* true]
+(do
+  (reset! analyze/CHILDREN true)
+  (forbid-side-effects-in-transaction
     (analyze/analyze-one '{:ns {:name clojure.core} :context :eval}
                          '(dosync 
                             (do 
                               (fn [] (set! *ns* 'ww)) ; TODO need context information from compiler, or to find it
                               (set! *ns* 'ss)
                               (set! *ns* 'blah))))))
+  )

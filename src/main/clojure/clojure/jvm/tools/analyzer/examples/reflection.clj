@@ -1,8 +1,8 @@
 (set! *warn-on-reflection* false)
 
-(ns analyze.examples.reflection
+(ns clojure.jvm.tools.analyzer.examples.reflection
   "Same as *warn-on-reflection*"
-  (:require [analyze.core :as analyze]))
+  (:require [clojure.jvm.tools.analyzer :as analyze]))
 
 (defn check-new [exp]
   (when (not (:ctor exp))
@@ -37,27 +37,28 @@
   (doseq [c (:children exp)]
     (check-for-reflection c)))
 
-(def analyzed
-  (binding [analyze/*children* true]
-    (doall (map #(apply analyze/analyze-path %) 
-                '[["clojure/test.clj" clojure.test]
-                  ["clojure/set.clj" clojure.set]
-                  ["clojure/java/io.clj" clojure.java.io]
-                  ["clojure/stacktrace.clj" clojure.stacktrace]
-                  ["clojure/pprint.clj" clojure.pprint]
-                  ["clojure/walk.clj" clojure.walk]
-                  ["clojure/string.clj" clojure.string]
-                  ["clojure/repl.clj" clojure.repl]
-                  ["clojure/core/protocols.clj" clojure.core.protocols]
-                  ["clojure/template.clj" clojure.template]]))))
+(comment
 
+(reset! analyze/CHILDREN true)
+
+(def analyzed
+  (doall (map analyze/analyze-ns
+              '[clojure.test
+                clojure.set
+                clojure.java.io
+                clojure.stacktrace
+                clojure.pprint
+                clojure.walk
+                clojure.string
+                clojure.repl
+                clojure.core.protocols
+                clojure.template])))
 
 (doseq [exprs analyzed
         exp exprs]
   (check-for-reflection exp))
 
-(comment
-(analyze-one {:ns {:name 'clojure.core} :context :eval} '(Integer. (+ 1 1)))
-(analyze-one {:ns {:name 'clojure.core} :context :eval} '(Integer. (+ 1 1)))
-(analyze-one {:ns {:name 'clojure.core} :context :eval} '(Integer. (+ 1 (even? 1))))
+(analyze/analyze-one {:ns {:name 'clojure.core} :context :eval} '(Integer. (+ 1 1)))
+(analyze/analyze-one {:ns {:name 'clojure.core} :context :eval} '(Integer. (+ 1 1)))
+(analyze/analyze-one {:ns {:name 'clojure.core} :context :eval} '(Integer. (+ 1 (even? 1))))
 )

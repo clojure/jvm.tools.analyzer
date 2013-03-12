@@ -1,4 +1,4 @@
-(ns analyze.fold)
+(ns clojure.jvm.tools.analyzer.fold)
 
 (def fold-expr-default ::fold-expr)
 

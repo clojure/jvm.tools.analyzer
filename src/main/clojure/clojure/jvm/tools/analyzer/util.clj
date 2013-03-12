@@ -1,4 +1,4 @@
-(ns analyze.util
+(ns clojure.jvm.tools.analyzer.util
   (:require [clojure.pprint :as pp]))
 
 (defn- dissoc-rec 
