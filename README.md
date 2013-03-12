@@ -16,6 +16,9 @@ http://clojure.org/contributing
 
 # Changelog
 
+0.3.1
+- Add column numbers for Clojure 1.5.0+
+
 0.3.0
 - New Hygienic transformation namespace, `analyze.hygiene`
   - `ast-hy`, AST -> hygienic AST
@@ -49,37 +52,56 @@ http://clojure.org/contributing
 
 ## Generating AST from syntax
 
+Note: Column numbers are only supported with Clojure 1.5.0 or later.
+
 ```clojure
 
-analyze.core=> (ast [1])
-{:op :constant, :env {:locals {}, :ns {:name analyze.core}}, :val [1]}
+clojure.jvm.tools.analyzer=> (ast [1])
+{:op :constant, :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}}, :val [1]}
 
-analyze.core=> (-> (ast (if true 1 2)) clojure.pprint/pprint)
+clojure.jvm.tools.analyzer=> (-> (ast (if true 1 2)) clojure.pprint/pprint)
 {:op :if,
- :env {:line 5, :locals {}, :ns {:name analyze.core}},
+ :env
+ {:column 10,
+  :line 4,
+  :locals {},
+  :ns {:name clojure.jvm.tools.analyzer}},
  :test
  {:op :boolean,
-  :env {:locals {}, :ns {:name analyze.core}},
+  :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
   :val true},
  :then
- {:op :number, :env {:locals {}, :ns {:name analyze.core}}, :val 1},
+ {:op :number,
+  :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
+  :val 1},
  :else
- {:op :number, :env {:locals {}, :ns {:name analyze.core}}, :val 2}}
+ {:op :number,
+  :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
+  :val 2}}
 nil
 
-analyze.core=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
+clojure.jvm.tools.analyzer=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
 {:op :fn-expr,
- :env {:locals {}, :ns {:name analyze.core}},
+ :env {:line 5, :locals {}, :ns {:name clojure.jvm.tools.analyzer}},
  :methods
  ({:op :fn-method,
-   :env {:locals {}, :ns {:name analyze.core}},
+   :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
    :body
    {:op :do,
-    :env {:locals {}, :ns {:name analyze.core}},
+    :env
+    {:source "REPL",
+     :column 18,
+     :line 5,
+     :locals {},
+     :ns {:name clojure.jvm.tools.analyzer}},
     :exprs
     ({:op :static-method,
       :env
-      {:line 6, :source "REPL", :locals {}, :ns {:name analyze.core}},
+      {:source "REPL",
+       :column 18,
+       :line 5,
+       :locals {},
+       :ns {:name clojure.jvm.tools.analyzer}},
       :class clojure.lang.Numbers,
       :method-name "add",
       :method
@@ -91,21 +113,21 @@ analyze.core=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
        :flags #{:static :public}},
       :args
       ({:op :local-binding-expr,
-        :env {:locals {}, :ns {:name analyze.core}},
+        :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
         :local-binding
         {:op :local-binding,
-         :env {:locals {}, :ns {:name analyze.core}},
+         :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
          :sym x,
          :tag nil,
          :init nil},
         :tag nil}
        {:op :number,
-        :env {:locals {}, :ns {:name analyze.core}},
+        :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
         :val 1}),
       :tag nil})},
    :required-params
    ({:op :local-binding,
-     :env {:locals {}, :ns {:name analyze.core}},
+     :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
      :sym x,
      :tag nil,
      :init nil}),
@@ -119,15 +141,19 @@ nil
 
 
 ```clojure
-analyze.core=> (require '[analyze.emit-form :as e])
+clojure.jvm.tools.analyzer=> (require '[clojure.jvm.tools.analyzer.emit-form :as e])
 nil
-analyze.core=> (-> (ast 1) e/emit-form)
+clojure.jvm.tools.analyzer=> (-> (ast 1) e/emit-form)
 1
-analyze.core=> (-> (ast [(+ 1 2)]) e/emit-form)
-[(. clojure.lang.Numbers add 1 2)]
+clojure.jvm.tools.analyzer=> (-> (ast [(+ 1 2)]) e/emit-form)
+[(clojure.lang.Numbers/add 1 2)]
 ```
 
 # Known Issues
+
+## Evaluating forms
+
+Currently the analyzer evaluates each form after it is analyzed.
 
 ## Incorrect handling of Var mappings within the same form
 
@@ -168,7 +194,7 @@ analyses to `clojure.core/require`.
 
 # Examples
 
-See `analyze.examples.*` namespaces.
+See `clojure.jvm.tools.analyzer.examples.*` namespaces.
 
 # Contributors
 

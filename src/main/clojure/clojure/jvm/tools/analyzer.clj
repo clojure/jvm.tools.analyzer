@@ -80,10 +80,36 @@
     (.setAccessible method true)
     (.invoke method obj (object-array args))))
 
+(defn- when-column-map [expr]
+  (let [field (try (.getDeclaredField (class expr) "column")
+                (catch Exception e))]
+    (when field
+      {:column (field-accessor (class expr) 'column expr)})))
+
+(defn- when-line-map [expr]
+  (let [field (try (.getDeclaredField (class expr) "line")
+                (catch Exception e))]
+    (when field
+      {:line (field-accessor (class expr) 'line expr)})))
+
+(defn- when-source-map [expr]
+  (let [field (try (.getDeclaredField (class expr) "source")
+                (catch Exception e))]
+    (when field
+      {:source (field-accessor (class expr) 'source expr)})))
+
+(defn- env-location [env expr]
+  (merge env
+         (when-line-map expr)
+         (when-column-map expr)
+         (when-source-map expr)))
+
 (defn- inherit-env [expr env]
   (merge env
          (when-let [line (-> expr :env :line)]
            {:line line})
+         (when-let [column (-> expr :env :column)]
+           {:column column})
          (when-let [source (-> expr :env :source)]
            {:source source})))
 
@@ -124,9 +150,7 @@
                  (analysis->map meta env))]
       (merge 
         {:op :def
-         :env (assoc env
-                     :source (field Compiler$DefExpr source expr)
-                     :line (field Compiler$DefExpr line expr))
+         :env (env-location env expr)
          :var (field Compiler$DefExpr var expr)
          :meta meta
          :init init
@@ -223,9 +247,7 @@
     (let [args (map analysis->map (field Compiler$StaticMethodExpr args expr) (repeat env))]
       (merge
         {:op :static-method
-         :env (assoc env
-                     :source (field Compiler$StaticMethodExpr source expr)
-                     :line (field Compiler$StaticMethodExpr line expr))
+         :env (env-location env expr)
          :class (field Compiler$StaticMethodExpr c expr)
          :method-name (field Compiler$StaticMethodExpr methodName expr)
          :method (when-let [method (field Compiler$StaticMethodExpr method expr)]
@@ -244,9 +266,7 @@
           args (map analysis->map (field Compiler$InstanceMethodExpr args expr) (repeat env))]
       (merge
         {:op :instance-method
-         :env (assoc env
-                     :source (field Compiler$InstanceMethodExpr source expr)
-                     :line (field Compiler$InstanceMethodExpr line expr))
+         :env (env-location env expr)
          :target target
          :method-name (field Compiler$InstanceMethodExpr methodName expr)
          :method (when-let [method (field Compiler$InstanceMethodExpr method expr)]
@@ -265,8 +285,7 @@
     (let []
       (merge
         {:op :static-field
-         :env (assoc env
-                     :line (field Compiler$StaticFieldExpr line expr))
+         :env (env-location env expr)
          :class (field Compiler$StaticFieldExpr c expr)
          :field-name (field Compiler$StaticFieldExpr fieldName expr)
          :field (when-let [field (field Compiler$StaticFieldExpr field expr)]
@@ -281,8 +300,7 @@
     (let [target (analysis->map (field Compiler$InstanceFieldExpr target expr) env)]
       (merge
         {:op :instance-field
-         :env (assoc env
-                     :line (field Compiler$InstanceFieldExpr line expr))
+         :env (env-location env expr)
          :target target
          :target-class (field Compiler$InstanceFieldExpr targetClass expr)
          :field (when-let [field (field Compiler$InstanceFieldExpr field expr)]
@@ -414,9 +432,7 @@
           args (map analysis->map (field Compiler$InvokeExpr args expr) (repeat env))]
       (merge
         {:op :invoke
-         :env (assoc env
-                     :line (field Compiler$InvokeExpr line expr)
-                     :source (field Compiler$InvokeExpr source expr))
+         :env (env-location env expr)
          :fexpr fexpr
          :tag (field Compiler$InvokeExpr tag expr)
          :args args
@@ -438,9 +454,7 @@
           kw (analysis->map (field Compiler$KeywordInvokeExpr kw expr) env)]
       (merge
         {:op :keyword-invoke
-         :env (assoc env
-                     :line (field Compiler$KeywordInvokeExpr line expr)
-                     :source (field Compiler$KeywordInvokeExpr source expr))
+         :env (env-location env expr)
          :kw kw
          :tag (field Compiler$KeywordInvokeExpr tag expr)
          :target target}
@@ -564,10 +578,9 @@
       (merge
         {:op :deftype*
          :name (symbol (.name expr))
-         :env (assoc env 
-                     :line (.line expr)
-                     ;:column (.col expr)
-                     )
+         :env (merge env 
+                     {:line (.line expr)}
+                     (when-column-map expr))
          :methods methods
          :mmap (field Compiler$NewInstanceExpr mmap expr)
 
@@ -641,8 +654,7 @@
           else (analysis->map (.elseExpr expr) env)]
       (merge
         {:op :if
-         :env (assoc env
-                     :line (.line expr))
+         :env (env-location env expr)
          :test test
          :then then
          :else else}
@@ -663,7 +675,7 @@
           default (analysis->map (.defaultExpr expr) env)]
       (merge
         {:op :case*
-         :env env
+         :env (env-location env expr)
          :the-expr the-expr
          :tests tests
          :thens thens
@@ -752,9 +764,7 @@
           args (map analysis->map (.args expr) (repeat env))]
       (merge
         {:op :recur
-         :env (assoc env
-                     :line (field Compiler$RecurExpr line expr)
-                     :source (field Compiler$RecurExpr source expr))
+         :env (env-location env expr)
          :loop-locals loop-locals
          :args args}
         (when @CHILDREN
