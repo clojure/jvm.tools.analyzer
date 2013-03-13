@@ -516,7 +516,7 @@
     (let [body (analysis->map (.body obm) env)]
       (merge
         {:op :new-instance-method
-         :env (env-location env expr)
+         :env (env-location env obm)
          :name (symbol (field Compiler$NewInstanceMethod name obm))
          :required-params (map analysis->map 
                                (concat [((field Compiler$ObjMethod indexlocals obm) 0)]
