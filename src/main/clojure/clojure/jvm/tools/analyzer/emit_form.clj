@@ -32,6 +32,10 @@
   [{:keys [class field-name]} _]
   (symbol (.getName class) (str field-name)))
 
+(defmethod map->form [:instance-field emit-default]
+  [{:keys [target field-name]} mode]
+  (list '. (map->form target mode) (symbol field-name)))
+
 (defmethod map->form [:invoke emit-default]
   [{:keys [fexpr args]} mode]
   `(~(map->form fexpr mode)
@@ -261,4 +265,9 @@
                 (b [a] a)
                 (c [c] a)]
           (a b c)))
+
+  ;instance field
+   (frm (.a 1))
+  ;instance method
+   (frm (.cancel (java.util.concurrent.FutureTask. #()) 1))
 )
