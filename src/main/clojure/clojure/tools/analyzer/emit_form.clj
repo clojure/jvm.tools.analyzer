@@ -41,7 +41,7 @@
   `(~(map->form fexpr mode)
        ~@(map #(map->form % mode) args)))
 
-(defn- var->symbol [var]
+(defn- var->symbol [^Var var]
   (symbol (str (ns-name (.ns var))) (str (.sym var))))
 
 (defmethod map->form [:the-var emit-default]
@@ -126,7 +126,7 @@
                            ~(map->form the-expr mode)))
 
 (defmethod map->form [:def emit-default]
-  [{:keys [var init init-provided]} mode] 
+  [{:keys [^Var var init init-provided]} mode] 
   `(def ~(.sym var) ~(when init-provided
                        (map->form init mode))))
 
