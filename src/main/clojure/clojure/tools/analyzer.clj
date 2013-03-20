@@ -87,10 +87,13 @@
       {:column (field-accessor (class expr) 'column expr)})))
 
 (defn- when-line-map [expr]
-  (let [field (try (.getDeclaredField (class expr) "line")
+  (let [method (try (.getMethod (class expr) "line" (into-array Class []))
+                 (catch Exception e))
+        field (try (.getDeclaredField (class expr) "line")
                 (catch Exception e))]
-    (when field
-      {:line (field-accessor (class expr) 'line expr)})))
+    (cond 
+      method {:line (.line expr)} ;assume public
+      field {:line (field-accessor (class expr) 'line expr)})))
 
 (defn- when-source-map [expr]
   (let [field (try (.getDeclaredField (class expr) "source")
