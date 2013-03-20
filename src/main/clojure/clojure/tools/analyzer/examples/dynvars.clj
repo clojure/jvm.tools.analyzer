@@ -1,5 +1,5 @@
-(ns clojure.jvm.tools.analyzer.examples.dynvars
-  (:require [clojure.jvm.tools.analyzer :as analyze]))
+(ns clojure.tools.analyzer.examples.dynvars
+  (:require [clojure.tools.analyzer :as analyze]))
 
 (defn earmuffed? [sym]
   (let [s (name sym)]

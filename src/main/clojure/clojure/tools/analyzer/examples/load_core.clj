@@ -1,6 +1,6 @@
-(ns clojure.jvm.tools.analyzer.examples.load-core
+(ns clojure.tools.analyzer.examples.load-core
   (:import [clojure.lang Compiler RT DynamicClassLoader])
-  (:require [clojure.jvm.tools.analyzer :as analyze]))
+  (:require [clojure.tools.analyzer :as analyze]))
 
 (comment
 

@@ -1,7 +1,7 @@
-(ns clojure.jvm.tools.analyzer.examples.side-effect
+(ns clojure.tools.analyzer.examples.side-effect
   "Warns on invocations of `set!` inside transactions.
   Entry point `forbid-side-effects-in-transaction`"
-  (:require [clojure.jvm.tools.analyzer :as analyze]
+  (:require [clojure.tools.analyzer :as analyze]
             [clojure.reflect :as reflect]))
 
 (def transaction-method

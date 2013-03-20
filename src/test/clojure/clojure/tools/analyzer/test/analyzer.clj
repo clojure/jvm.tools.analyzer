@@ -1,6 +1,6 @@
-(ns clojure.jvm.tools.analyzer.test.analyzer
+(ns clojure.tools.analyzer.test.analyzer
   (:require [clojure.test :refer :all]
-            [clojure.jvm.tools.analyzer :refer :all]))
+            [clojure.tools.analyzer :refer :all]))
 
 (deftest test-ast
   (is (= (-> (ast 1) :op)
@@ -24,4 +24,4 @@
                     require))
            :exprs last :var)
          #'clojure.core/require)) ;should be `clojure.set/intersection`
-  (is (analyze-ns (pb-reader-for-ns 'clojure.jvm.tools.analyzer.test.require) 'my-ns 'my-ns)))
+  (is (analyze-ns (pb-reader-for-ns 'clojure.tools.analyzer.test.require) 'my-ns 'my-ns)))

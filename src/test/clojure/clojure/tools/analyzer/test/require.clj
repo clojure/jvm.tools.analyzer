@@ -1,4 +1,4 @@
-(ns clojure.jvm.tools.analyzer.test.require
+(ns clojure.tools.analyzer.test.require
   ;; any :use or :refer is acceptable here, as long as the refer'd fn is not 
   ;; present in the user namespace (or wherever analyze is run from)
   (:require [clojure.set :refer (intersection)]))

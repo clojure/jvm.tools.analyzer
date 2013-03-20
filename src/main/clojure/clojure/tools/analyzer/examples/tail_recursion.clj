@@ -1,5 +1,5 @@
-(ns clojure.jvm.tools.analyzer.examples.tail-recursion
-  (:require [clojure.jvm.tools.analyzer :as analyze]))
+(ns clojure.tools.analyzer.examples.tail-recursion
+  (:require [clojure.tools.analyzer :as analyze]))
 
 ;; ## Utility functions
 

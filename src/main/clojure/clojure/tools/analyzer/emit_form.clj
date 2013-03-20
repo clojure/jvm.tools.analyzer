@@ -1,5 +1,5 @@
-(ns clojure.jvm.tools.analyzer.emit-form
-  (:require [clojure.jvm.tools.analyzer :refer [ast]]))
+(ns clojure.tools.analyzer.emit-form
+  (:require [clojure.tools.analyzer :refer [ast]]))
 
 (def emit-default ::emit-default)
 
@@ -24,12 +24,12 @@
 (defmethod map->form [:keyword emit-default] [{:keys [val]} _] val)
 
 (defmethod map->form [:static-method emit-default]
-  [{:keys [class method-name args]} mode] 
-  `(~(symbol (.getName class) (str method-name))
+  [{:keys [^Class class method-name args]} mode] 
+ `(~(symbol (.getName class) (str method-name))
        ~@(map #(map->form % mode) args)))
 
 (defmethod map->form [:static-field emit-default]
-  [{:keys [class field-name]} _]
+  [{:keys [^Class class field-name]} _]
   (symbol (.getName class) (str field-name)))
 
 (defmethod map->form [:instance-field emit-default]
@@ -59,7 +59,7 @@
        ~@(map #(map->form % mode) args)))
 
 (defmethod map->form [:new emit-default]
-  [{:keys [class args]} mode]
+  [{:keys [^Class class args]} mode]
   `(new ~(symbol (.getName class))
         ~@(map #(map->form % mode) args)))
 
@@ -121,7 +121,7 @@
   `(if ~@(map #(map->form % mode) [test then else])))
 
 (defmethod map->form [:instance-of emit-default]
-  [{:keys [class the-expr]} mode] 
+  [{:keys [^Class class the-expr]} mode] 
   `(clojure.core/instance? ~(symbol (.getName class))
                            ~(map->form the-expr mode)))
 
@@ -168,7 +168,7 @@
            (when finally-expr [(list 'finally (map->form finally-expr mode))]))))
 
 (defmethod map->form [:catch emit-default]
-  [{:keys [class local-binding handler]} mode]
+  [{:keys [^Class class local-binding handler]} mode]
   (list 'catch (symbol (.getName class))
         (map->form local-binding mode) 
         (map->form handler mode)))
