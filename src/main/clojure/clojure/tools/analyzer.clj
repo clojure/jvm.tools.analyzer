@@ -74,9 +74,9 @@
         (boolean ret)
         ret))))
 
-#_(defn- method-accessor [^Class class-obj method obj types & args]
+(defn- method-accessor [^Class class-obj method obj types & args]
   (let [^java.lang.reflect.Method 
-        method (.getDeclaredMethod class-obj (name method) (into-array Class types))]
+        method (.getMethod class-obj (name method) (into-array Class types))]
     (.setAccessible method true)
     (.invoke method obj (object-array args))))
 
@@ -87,12 +87,13 @@
       {:column (field-accessor (class expr) 'column expr)})))
 
 (defn- when-line-map [expr]
-  (let [method (try (.getMethod (class expr) "line" (into-array Class []))
+  (let [^java.lang.reflect.Method
+        method (try (.getMethod (class expr) "line" (into-array Class []))
                  (catch Exception e))
         field (try (.getDeclaredField (class expr) "line")
                 (catch Exception e))]
     (cond 
-      method {:line (.line expr)} ;assume public
+      method {:line (method-accessor (class expr) 'line expr (into-array Class []))}
       field {:line (field-accessor (class expr) 'line expr)})))
 
 (defn- when-source-map [expr]
