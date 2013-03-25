@@ -1,4 +1,4 @@
-Clojars Dependency: `[org.clojure/jvm.tools.analyzer "0.3.0"]`
+Clojars Dependency: `[org.clojure/jvm.tools.analyzer "0.3.2"]`
 
 # Interface to Clojure's Analyzer
 
@@ -8,11 +8,25 @@ _analyze_ provides an interface to this phase, callable a la carte. The output i
 
 Supports Clojure 1.4.0 or later.
 
-# Contributing
+## Releases and Dependency Information
 
-Pull requests accepted from registered Clojure contributers
+Latest stable release is 0.3.2.
 
-http://clojure.org/contributing
+Leiningen dependency information:
+
+```clojure
+[org.clojure/jvm.tools.analyzer "0.3.2"]
+```
+
+Maven dependency information:
+
+```XML
+<dependency>
+  <groupId>org.clojure</groupId>
+  <artifactId>jvm.tools.analyzer</artifactId>
+  <version>0.3.2</version>
+</dependency>
+```
 
 # Usage
 
@@ -22,36 +36,36 @@ Note: Column numbers are only supported with Clojure 1.5.0 or later.
 
 ```clojure
 
-clojure.jvm.tools.analyzer=> (ast [1])
-{:op :constant, :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}}, :val [1]}
+clojure.tools.analyzer=> (ast [1])
+{:op :constant, :env {:locals {}, :ns {:name clojure.tools.analyzer}}, :val [1]}
 
-clojure.jvm.tools.analyzer=> (-> (ast (if true 1 2)) clojure.pprint/pprint)
+clojure.tools.analyzer=> (-> (ast (if true 1 2)) clojure.pprint/pprint)
 {:op :if,
  :env
  {:column 10,
   :line 4,
   :locals {},
-  :ns {:name clojure.jvm.tools.analyzer}},
+  :ns {:name clojure.tools.analyzer}},
  :test
  {:op :boolean,
-  :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
+  :env {:locals {}, :ns {:name clojure.tools.analyzer}},
   :val true},
  :then
  {:op :number,
-  :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
+  :env {:locals {}, :ns {:name clojure.tools.analyzer}},
   :val 1},
  :else
  {:op :number,
-  :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
+  :env {:locals {}, :ns {:name clojure.tools.analyzer}},
   :val 2}}
 nil
 
-clojure.jvm.tools.analyzer=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
+clojure.tools.analyzer=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
 {:op :fn-expr,
- :env {:line 5, :locals {}, :ns {:name clojure.jvm.tools.analyzer}},
+ :env {:line 5, :locals {}, :ns {:name clojure.tools.analyzer}},
  :methods
  ({:op :fn-method,
-   :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
+   :env {:locals {}, :ns {:name clojure.tools.analyzer}},
    :body
    {:op :do,
     :env
@@ -59,7 +73,7 @@ clojure.jvm.tools.analyzer=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
      :column 18,
      :line 5,
      :locals {},
-     :ns {:name clojure.jvm.tools.analyzer}},
+     :ns {:name clojure.tools.analyzer}},
     :exprs
     ({:op :static-method,
       :env
@@ -67,7 +81,7 @@ clojure.jvm.tools.analyzer=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
        :column 18,
        :line 5,
        :locals {},
-       :ns {:name clojure.jvm.tools.analyzer}},
+       :ns {:name clojure.tools.analyzer}},
       :class clojure.lang.Numbers,
       :method-name "add",
       :method
@@ -79,21 +93,21 @@ clojure.jvm.tools.analyzer=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
        :flags #{:static :public}},
       :args
       ({:op :local-binding-expr,
-        :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
+        :env {:locals {}, :ns {:name clojure.tools.analyzer}},
         :local-binding
         {:op :local-binding,
-         :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
+         :env {:locals {}, :ns {:name clojure.tools.analyzer}},
          :sym x,
          :tag nil,
          :init nil},
         :tag nil}
        {:op :number,
-        :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
+        :env {:locals {}, :ns {:name clojure.tools.analyzer}},
         :val 1}),
       :tag nil})},
    :required-params
    ({:op :local-binding,
-     :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
+     :env {:locals {}, :ns {:name clojure.tools.analyzer}},
      :sym x,
      :tag nil,
      :init nil}),
@@ -107,11 +121,11 @@ nil
 
 
 ```clojure
-clojure.jvm.tools.analyzer=> (require '[clojure.jvm.tools.analyzer.emit-form :as e])
+clojure.tools.analyzer=> (require '[clojure.tools.analyzer.emit-form :as e])
 nil
-clojure.jvm.tools.analyzer=> (-> (ast 1) e/emit-form)
+clojure.tools.analyzer=> (-> (ast 1) e/emit-form)
 1
-clojure.jvm.tools.analyzer=> (-> (ast [(+ 1 2)]) e/emit-form)
+clojure.tools.analyzer=> (-> (ast [(+ 1 2)]) e/emit-form)
 [(clojure.lang.Numbers/add 1 2)]
 ```
 
@@ -160,10 +174,16 @@ analyses to `clojure.core/require`.
 
 # Examples
 
-See `clojure.jvm.tools.analyzer.examples.*` namespaces.
+See `clojure.tools.analyzer.examples.*` namespaces.
 
 # Contributors
 
 - Jonas Enlund (jonase)
 - Nicola Mometto (Bronsa)
 - Chris Gray (chrismgray)
+
+## License
+
+Copyright © Ambrose Bonnaire-Sergeant, Rich Hickey & contributors.
+
+Licensed under the EPL (see the file epl.html).
