@@ -1,14 +1,12 @@
-Clojars Dependency: `[org.clojure/jvm.tools.analyzer "0.3.2"]`
-
-# Interface to Clojure's Analyzer
+# jvm.tools.analyzer: An Interface to Clojure's Analyzer
 
 Clojure's analysis compilation phase holds rich information about Clojure forms, like type/reflection information.
 
-_analyze_ provides an interface to this phase, callable a la carte. The output is similar to ClojureScript's analyzer.
+jvm.tools.analyzer provides an interface to this phase, callable a la carte. The output is similar to ClojureScript's analyzer.
 
 Supports Clojure 1.4.0 or later.
 
-## Releases and Dependency Information
+# Releases and Dependency Information
 
 Latest stable release is 0.3.2.
 
