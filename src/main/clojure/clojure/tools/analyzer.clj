@@ -93,7 +93,7 @@
         field (try (.getDeclaredField (class expr) "line")
                 (catch Exception e))]
     (cond 
-      method {:line (method-accessor (class expr) 'line expr (into-array Class []))}
+      method {:line (method-accessor (class expr) 'line expr [])}
       field {:line (field-accessor (class expr) 'line expr)})))
 
 (defn- when-source-map [expr]
@@ -794,14 +794,13 @@
 (defn- analyze*
   "Must be called after binding the appropriate Compiler and RT dynamic Vars."
   [env form]
-  (letfn [(invoke-analyze [context form]
-            (Compiler/analyze context form))]
-    (let [context (keyword->Context (:context env))
-          expr-ast (try
-                     (invoke-analyze context form)
-                     (catch RuntimeException e
-                       (throw (repl/root-cause e))))]
-      (analysis->map expr-ast (merge-with conj (dissoc env :context) {:locals {}})))))
+  (let [context (keyword->Context (:context env))
+        expr-ast (try
+                   (Compiler/analyze context form)
+                   (catch RuntimeException e
+                     (throw (repl/root-cause e))))
+        _ (method-accessor Compiler$Expr 'eval expr-ast [])]
+    (analysis->map expr-ast (merge-with conj (dissoc env :context) {:locals {}}))))
 
 (defn analyze-one
   "Analyze a single form"
@@ -858,67 +857,6 @@
      ~(when (RT-members 'DATA_READERS)
         `{RT/DATA_READERS @RT/DATA_READERS})))
 
-; public static Object eval(Object form, boolean freshLoader) {
-;   boolean createdLoader = false;
-;   if(true)//!LOADER.isBound())
-;     {
-;     Var.pushThreadBindings(RT.map(LOADER, RT.makeClassLoader()));
-;     createdLoader = true;
-;     }
-;   try
-;     {
-;     Integer line = (Integer) LINE.deref();
-;     Integer column = (Integer) COLUMN.deref();
-;     if(RT.meta(form) != null && RT.meta(form).containsKey(RT.LINE_KEY))
-;       line = (Integer) RT.meta(form).valAt(RT.LINE_KEY);
-;     if(RT.meta(form) != null && RT.meta(form).containsKey(RT.COLUMN_KEY))
-;       column = (Integer) RT.meta(form).valAt(RT.COLUMN_KEY);
-;     Var.pushThreadBindings(RT.map(LINE, line, COLUMN, column));
-;     try
-;       {
-;       form = macroexpand(form);
-;       if(form instanceof IPersistentCollection && Util.equals(RT.first(form), DO))
-;         {
-;         ISeq s = RT.next(form);
-;         for(; RT.next(s) != null; s = RT.next(s))
-;           eval(RT.first(s), false);
-;         return eval(RT.first(s), false);
-;         }
-;       else if((form instanceof IType) ||
-;           (form instanceof IPersistentCollection
-;           && !(RT.first(form) instanceof Symbol
-;             && ((Symbol) RT.first(form)).name.startsWith("def"))))
-;         {
-;         ObjExpr fexpr = (ObjExpr) analyze(C.EXPRESSION, RT.list(FN, PersistentVector.EMPTY, form),
-;                           "eval" + RT.nextID());
-;         IFn fn = (IFn) fexpr.eval();
-;         return fn.invoke();
-;         }
-;       else
-;         {
-;         Expr expr = analyze(C.EVAL, form);
-;         return expr.eval();
-;         }
-;       }
-;     catch(Throwable e)
-;       {
-;       if(!(e instanceof RuntimeException))
-;         throw Util.sneakyThrow(e);
-;       throw (RuntimeException)e;
-;       }
-;     finally
-;       {
-;       Var.popThreadBindings();
-;       }
-;     }
-; 
-;   finally
-;     {
-;     if(createdLoader)
-;       Var.popThreadBindings();
-;     }
-; }
-
 (defn analyze-ns
   "Takes a LineNumberingPushbackReader and a namespace symbol.
   Returns a vector of maps, with keys :op, :env. If expressions
@@ -941,10 +879,10 @@
              (if (identical? form eof)
                out
                ;; FIXME shouldn't be source-nsym here
-               (let [env {:ns {:name source-nsym} :context :eval :locals {}}
-                     java-ast (Compiler/analyze (keyword->Context :eval) form)
-                     m (analysis->map java-ast env)
-                     _ (method-accessor Compiler$Expr 'eval java-ast (into-array Class []))]
+               (let [env {:ns {:name (-> @RT/CURRENT_NS str symbol)} :locals {}}
+                     expr-ast (Compiler/analyze (keyword->Context :eval) form)
+                     m (analysis->map expr-ast env)
+                     _ (method-accessor Compiler$Expr 'eval expr-ast [])]
                  (recur (read pushback-reader nil eof) (conj out m))))))
          (finally
            (pop-thread-bindings)))))))
