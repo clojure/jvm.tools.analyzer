@@ -4,7 +4,8 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.4.0"]
-                 [org.clojure/tools.trace "0.7.3"]]
+                 [org.clojure/tools.trace "0.7.3"]
+                 [org.clojure/clojurescript "0.0-1586"]]
   
   ;:repositories {"sonatype-oss-public" "https://oss.sonatype.org/content/groups/public/"}
 

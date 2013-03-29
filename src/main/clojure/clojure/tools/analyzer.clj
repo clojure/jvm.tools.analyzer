@@ -14,7 +14,7 @@
                          Compiler$MapExpr Compiler$IfExpr Compiler$KeywordInvokeExpr Compiler$InstanceFieldExpr Compiler$InstanceOfExpr
                          Compiler$CaseExpr Compiler$Expr Compiler$SetExpr Compiler$MethodParamExpr Compiler$KeywordExpr
                          Compiler$ConstantExpr Compiler$NumberExpr Compiler$NilExpr Compiler$BooleanExpr Compiler$StringExpr
-                         Compiler$ObjMethod))
+                         Compiler$ObjMethod Compiler$Expr))
   (:require [clojure.reflect :as reflect]
             [clojure.java.io :as io]
             [clojure.repl :as repl]
@@ -784,16 +784,19 @@
         (when @JAVA-OBJ
           {:Expr-obj expr})))))
 
+(defn keyword->Context [k]
+  (case k
+    :statement Compiler$C/STATEMENT
+    :expression Compiler$C/EXPRESSION
+    :return Compiler$C/RETURN
+    :eval Compiler$C/EVAL))
+
 (defn- analyze*
   "Must be called after binding the appropriate Compiler and RT dynamic Vars."
   [env form]
   (letfn [(invoke-analyze [context form]
             (Compiler/analyze context form))]
-    (let [context (case (:context env)
-                    :statement Compiler$C/STATEMENT
-                    :expression Compiler$C/EXPRESSION
-                    :return Compiler$C/RETURN
-                    :eval Compiler$C/EVAL)
+    (let [context (keyword->Context (:context env))
           expr-ast (try
                      (invoke-analyze context form)
                      (catch RuntimeException e
@@ -803,7 +806,7 @@
 (defn analyze-one
   "Analyze a single form"
   [env form]
-  (analyze* env #_(find-ns (-> env :ns :name)) form))
+  (analyze* env form))
 
 (defn forms-seq
   "Lazy seq of forms in a Clojure or ClojureScript file."
@@ -855,6 +858,92 @@
      ~(when (RT-members 'DATA_READERS)
         `{RT/DATA_READERS @RT/DATA_READERS})))
 
+; public static Object eval(Object form, boolean freshLoader) {
+;   boolean createdLoader = false;
+;   if(true)//!LOADER.isBound())
+;     {
+;     Var.pushThreadBindings(RT.map(LOADER, RT.makeClassLoader()));
+;     createdLoader = true;
+;     }
+;   try
+;     {
+;     Integer line = (Integer) LINE.deref();
+;     Integer column = (Integer) COLUMN.deref();
+;     if(RT.meta(form) != null && RT.meta(form).containsKey(RT.LINE_KEY))
+;       line = (Integer) RT.meta(form).valAt(RT.LINE_KEY);
+;     if(RT.meta(form) != null && RT.meta(form).containsKey(RT.COLUMN_KEY))
+;       column = (Integer) RT.meta(form).valAt(RT.COLUMN_KEY);
+;     Var.pushThreadBindings(RT.map(LINE, line, COLUMN, column));
+;     try
+;       {
+;       form = macroexpand(form);
+;       if(form instanceof IPersistentCollection && Util.equals(RT.first(form), DO))
+;         {
+;         ISeq s = RT.next(form);
+;         for(; RT.next(s) != null; s = RT.next(s))
+;           eval(RT.first(s), false);
+;         return eval(RT.first(s), false);
+;         }
+;       else if((form instanceof IType) ||
+;           (form instanceof IPersistentCollection
+;           && !(RT.first(form) instanceof Symbol
+;             && ((Symbol) RT.first(form)).name.startsWith("def"))))
+;         {
+;         ObjExpr fexpr = (ObjExpr) analyze(C.EXPRESSION, RT.list(FN, PersistentVector.EMPTY, form),
+;                           "eval" + RT.nextID());
+;         IFn fn = (IFn) fexpr.eval();
+;         return fn.invoke();
+;         }
+;       else
+;         {
+;         Expr expr = analyze(C.EVAL, form);
+;         return expr.eval();
+;         }
+;       }
+;     catch(Throwable e)
+;       {
+;       if(!(e instanceof RuntimeException))
+;         throw Util.sneakyThrow(e);
+;       throw (RuntimeException)e;
+;       }
+;     finally
+;       {
+;       Var.popThreadBindings();
+;       }
+;     }
+; 
+;   finally
+;     {
+;     if(createdLoader)
+;       Var.popThreadBindings();
+;     }
+; }
+
+
+(defn eval-noloader [form]
+  (let [form (macroexpand form)]
+    (cond 
+      (and (coll? form)
+           (= 'do (first form)))
+      (let [exprs (vec (next form))]
+        (doseq [e (butlast exprs)]
+          (eval-noloader e))
+        (eval-noloader (last exprs)))
+
+      (or (instance? clojure.lang.IType form)
+          (and (coll? form)
+               (not 
+                 (and (symbol? (first form))
+                      (.startsWith (name (first form)) "def")))))
+      (let [^Compiler$ObjExpr fexpr (Compiler/analyze (keyword->Context :expression) (list 'fn [] form))
+            ^clojure.lang.IFn fn (.eval fexpr)]
+        (.invoke fn))
+
+      :else
+      (-> 
+        (Compiler/analyze (keyword->Context :eval) form)
+        eval-noloader))))
+
 (defn analyze-ns
   "Takes a LineNumberingPushbackReader and a namespace symbol.
   Returns a vector of maps, with keys :op, :env. If expressions
@@ -878,8 +967,9 @@
                out
                ;; FIXME shouldn't be source-nsym here
                (let [env {:ns {:name source-nsym} :context :eval :locals {}}
-                     m (analyze* env form)
-                     _ (eval form)]
+                     java-ast (Compiler/analyze (keyword->Context :eval) form)
+                     m (analysis->map java-ast env)
+                     _ (method-accessor Compiler$Expr 'eval java-ast (into-array Class []))]
                  (recur (read pushback-reader nil eof) (conj out m))))))
          (finally
            (pop-thread-bindings)))))))
