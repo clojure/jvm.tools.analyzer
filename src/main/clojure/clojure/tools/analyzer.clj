@@ -919,31 +919,6 @@
 ;     }
 ; }
 
-
-(defn eval-noloader [form]
-  (let [form (macroexpand form)]
-    (cond 
-      (and (coll? form)
-           (= 'do (first form)))
-      (let [exprs (vec (next form))]
-        (doseq [e (butlast exprs)]
-          (eval-noloader e))
-        (eval-noloader (last exprs)))
-
-      (or (instance? clojure.lang.IType form)
-          (and (coll? form)
-               (not 
-                 (and (symbol? (first form))
-                      (.startsWith (name (first form)) "def")))))
-      (let [^Compiler$ObjExpr fexpr (Compiler/analyze (keyword->Context :expression) (list 'fn [] form))
-            ^clojure.lang.IFn fn (.eval fexpr)]
-        (.invoke fn))
-
-      :else
-      (-> 
-        (Compiler/analyze (keyword->Context :eval) form)
-        eval-noloader))))
-
 (defn analyze-ns
   "Takes a LineNumberingPushbackReader and a namespace symbol.
   Returns a vector of maps, with keys :op, :env. If expressions
