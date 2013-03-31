@@ -25,3 +25,6 @@
            :exprs last :var)
          #'clojure.core/require)) ;should be `clojure.set/intersection`
   (is (analyze-ns (pb-reader-for-ns 'clojure.tools.analyzer.test.require) 'my-ns 'my-ns)))
+
+(deftest records-test
+  (is (analyze-ns 'clojure.tools.analyzer.test.records)))

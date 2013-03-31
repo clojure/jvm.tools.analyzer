@@ -542,7 +542,8 @@
          :required-params (map analysis->map 
                                (concat [((field Compiler$ObjMethod indexlocals obm) 0)]
                                        (field Compiler$ObjMethod argLocals obm))
-                               (repeat env))
+                               (repeat env)
+                               (repeat opt))
          :body body}
         (when (:children opt)
           {:children [[[:body] {}]]})
