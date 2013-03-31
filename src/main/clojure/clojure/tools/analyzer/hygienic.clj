@@ -2,7 +2,7 @@
   (:require [clojure.tools.analyzer
              [fold :refer [derive-default-fold add-fold-case fold-expr]]
              [emit-form :refer [map->form derive-emit-default]]]
-            [clojure.tools.analyzer :refer [ast]]))
+            [clojure.tools.analyzer]))
 
 (declare hygienic-emit hygienic-ast)
 
@@ -220,6 +220,7 @@
              :body hy-body))))
 
 (comment
+  (refer 'clojure.tools.analyzer :only '(ast))
   (-> (ast (let [a 1 a a b a a a] a)) ast-hy emit-hy)
 
   (-> (ast (fn a [a a] a)) ast-hy emit-hy)
@@ -253,10 +254,10 @@
       )
     ast-hy emit-hy)
 
-  (-> (ast (letfn [(a [b] b)
+  (-> (ast (letfn [(a [])
                    (b [a] a)
                    (c [c] a)
-                   (a [])]
+                   (a [b c] b)]
              (a b c)))
     ast-hy emit-hy)
   )

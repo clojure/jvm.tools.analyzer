@@ -80,7 +80,10 @@
   (let [^java.lang.reflect.Method 
         method (.getMethod class-obj (name method) (into-array Class types))]
     (.setAccessible method true)
-    (.invoke method obj (object-array args))))
+    (try 
+      (.invoke method obj (object-array args))
+      (catch java.lang.reflect.InvocationTargetException e
+        (throw (repl/root-cause e))))))
 
 (defn- when-column-map [expr]
   (let [field (try (.getDeclaredField (class expr) "column")
@@ -825,7 +828,7 @@
                     (Compiler/analyze context form)
                     (catch RuntimeException e
                       (throw (repl/root-cause e))))
-         _ (method-accessor Compiler$Expr 'eval expr-ast [])]
+         _ (method-accessor (class expr-ast) 'eval expr-ast [])]
      (analysis->map expr-ast (merge-with conj (dissoc env :context) {:locals {}}) opt))))
 
 (defn analyze-one
@@ -945,5 +948,12 @@
                        in
                        [in])]
       child-expr))
-  
+
+  (def in (Compiler/analyze Compiler$C/STATEMENT '(seq 1)))
+  (class in)
+  (def method (doto (.getMethod (class in) "eval" (into-array Class []))
+                (.setAccessible true)))
+  (try (.invoke method in (object-array []))
+    (catch java.lang.reflect.InvocationTargetException e
+      (throw (repl/root-cause e))))
   )
