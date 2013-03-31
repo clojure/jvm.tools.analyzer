@@ -39,8 +39,6 @@
 
 (comment
 
-(reset! analyze/CHILDREN true)
-
 (def analyzed
   (doall (map analyze/analyze-ns
               '[clojure.test
@@ -52,13 +50,20 @@
                 clojure.string
                 clojure.repl
                 clojure.core.protocols
-                clojure.template])))
+                clojure.template]
+              (repeat {:children true}))))
 
 (doseq [exprs analyzed
         exp exprs]
   (check-for-reflection exp))
 
-(analyze/analyze-one {:ns {:name 'clojure.core} :context :eval} '(Integer. (+ 1 1)))
-(analyze/analyze-one {:ns {:name 'clojure.core} :context :eval} '(Integer. (+ 1 1)))
-(analyze/analyze-one {:ns {:name 'clojure.core} :context :eval} '(Integer. (+ 1 (even? 1))))
+(analyze/analyze-one {:ns {:name 'clojure.core} :context :eval} 
+                     '(Integer. (+ 1 1))
+                     {:children true})
+(analyze/analyze-one {:ns {:name 'clojure.core} :context :eval} 
+                     '(Integer. (+ 1 1))
+                     {:children true})
+(analyze/analyze-one {:ns {:name 'clojure.core} :context :eval} 
+                     '(Integer. (+ 1 (even? 1)))
+                     {:children true})
 )

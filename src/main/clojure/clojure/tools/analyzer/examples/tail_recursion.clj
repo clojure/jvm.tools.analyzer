@@ -38,8 +38,6 @@
     (boolean (when fn-name (some (partial = fn-name) tail-ops)))))
 
 (comment
-  (reset! analyze/CHILDREN true)
-
 (def analyzed
   (doall (map analyze/analyze-ns
               '[clojure.test
@@ -51,7 +49,8 @@
                 clojure.string
                 clojure.repl
                 clojure.core.protocols
-                clojure.template])))
+                clojure.template]
+              (repeat {:children true}))))
 
 (doseq [exprs analyzed
         exp (filter (comp #{:def :fn-expr} :op) exprs)]
@@ -63,29 +62,31 @@
   (require 'clojure.pprint)
   (tail-recursive?
    (analyze/analyze-one {:ns {:name 'clojure.repl} :context :eval}
-                        '(def foo (list))))
+                        '(def foo (list))
+                        {:children true}))
   (tail-recursive?
    (analyze/analyze-one {:ns {:name 'clojure.repl} :context :eval}
                         '(defn foo [x]
                            (if (< x 10)
                              (foo (inc x))
-                             x))))
+                             x))
+                        {:children true}))
 
   (tail-recursive?
-   (analyze/analyze-one {:ns {:name 'clojure.test} :context :eval}
-                        '(defn testing-vars-str
-  "Returns a string representation of the current test.  Renders names
-  in *testing-vars* as a list, then the source file and line of
-  current assertion."
-  {:added "1.1"}
-  [m]
-  (let [{:keys [file line]} m]
-    (str
-     ;; Uncomment to include namespace in failure report:
-     ;;(ns-name (:ns (meta (first *testing-vars*)))) "/ "
-     (reverse (map #(:name (meta %)) *testing-vars*))
-     " (" file ":" line ")"))))
-   )
+    (analyze/analyze-one {:ns {:name 'clojure.test} :context :eval}
+                         '(defn testing-vars-str
+                            "Returns a string representation of the current test.  Renders names
+                            in *testing-vars* as a list, then the source file and line of
+                            current assertion."
+                            {:added "1.1"}
+                            [m]
+                            (let [{:keys [file line]} m]
+                              (str
+                                ;; Uncomment to include namespace in failure report:
+                                ;;(ns-name (:ns (meta (first *testing-vars*)))) "/ "
+                                (reverse (map #(:name (meta %)) *testing-vars*))
+                                " (" file ":" line ")")))
+                         {:children true}))
 
 
   )

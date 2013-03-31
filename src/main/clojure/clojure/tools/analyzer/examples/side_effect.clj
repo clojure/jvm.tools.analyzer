@@ -47,13 +47,12 @@
 
 ;; Check individual form
 
-(do
-  (reset! analyze/CHILDREN true)
   (forbid-side-effects-in-transaction
     (analyze/analyze-one '{:ns {:name clojure.core} :context :eval}
                          '(dosync 
                             (do 
                               (fn [] (set! *ns* 'ww)) ; TODO need context information from compiler, or to find it
                               (set! *ns* 'ss)
-                              (set! *ns* 'blah))))))
+                              (set! *ns* 'blah)))
+                         {:children true}))
   )

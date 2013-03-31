@@ -19,12 +19,11 @@
 
 (comment
 
-  (reset! analyze/CHILDREN true)
-
   (find-and-analyze-use-forms
     (analyze/ast
       (ns sjfis (:use [clojure.set :only [union]]
-                      clojure.repl))))
+                      clojure.repl))
+      {:children true}))
 
 
   (def analyzed

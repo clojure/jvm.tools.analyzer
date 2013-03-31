@@ -22,12 +22,10 @@
 
 (comment
 
-(do
-  (reset! analyze/CHILDREN true)
-
   (find-and-check-defs
     (analyze/analyze-one {:ns {:name 'user} :context :eval}
-                         '(def *a* 1))))
+                         '(def *a* 1)
+                         {:children true}))
 
 (def analyzed
   (doall (map analyze/analyze-ns

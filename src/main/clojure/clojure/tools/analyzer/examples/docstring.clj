@@ -44,11 +44,10 @@
 
 ;; One form at a time
 
-  (do
-    (reset! analyze/CHILDREN true)
-    (find-and-check-defs
-      (analyze/analyze-one {:ns {:name 'clojure.repl} :context :eval}
-                           '(defn a []
-                              "asdf"
-                              (+ 1 1)))))
+  (find-and-check-defs
+    (analyze/analyze-one {:ns {:name 'clojure.repl} :context :eval}
+                         '(defn a []
+                            "asdf"
+                            (+ 1 1))
+                         {:children true}))
   )

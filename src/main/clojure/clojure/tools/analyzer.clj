@@ -21,32 +21,34 @@
             [clojure.string :as string]
             [clojure.tools.analyzer.util :as util]))
 
-(def CHILDREN (atom false))
-(def JAVA-OBJ (atom false))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interface
 
 (declare analyze-one)
 
-(defn analyze-form-in-ns [nsym form]
-  (analyze-one {:ns {:name nsym} :context :eval}
-               form))
+(defn analyze-form-in-ns 
+  ([nsym form] (analyze-form-in-ns nsym form {}))
+  ([nsym form opt]
+   (analyze-one {:ns {:name nsym} :context :eval}
+                form opt)))
 
-(defn analyze-form [form]
-  (analyze-form-in-ns (ns-name *ns*) form))
+(defn analyze-form 
+  ([form] (analyze-form form {}))
+  ([form opt] (analyze-form-in-ns (ns-name *ns*) form opt)))
 
 (defmacro ast-in-ns
   "Returns the abstract syntax tree representation of the given form,
   evaluated in the given namespace"
-  [nsym form]
-  `(analyze-form-in-ns '~nsym '~form))
+  ([nsym form] `(ast-in-ns ~nsym ~form {}))
+  ([nsym form opt]
+   `(analyze-form-in-ns '~nsym '~form ~opt)))
 
 (defmacro ast 
   "Returns the abstract syntax tree representation of the given form,
   evaluated in the current namespace"
-  [form]
-  `(analyze-form '~form))
+  ([form] `(ast ~form {}))
+  ([form opt]
+   `(analyze-form '~form ~opt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Utils
@@ -118,8 +120,13 @@
            {:source source})))
 
 (defprotocol AnalysisToMap
-  (analysis->map [aobj env]
-    "Recursively converts the output of the Compiler's analysis to a map"))
+  (analysis->map [aobj env opt]
+    "Recursively converts the output of the Compiler's analysis to a map. Takes
+    a map of options:
+    - :children
+      when true, include a :children key with all child expressions of each node
+    - :java-obj
+      when true, include a :java-obj key with the node's corresponding Java object"))
 
 ;; Literals extending abstract class Compiler$LiteralExpr and have public value fields
 
@@ -127,13 +134,13 @@
   `(extend-protocol AnalysisToMap
      ~disp-class
      (~'analysis->map
-       [expr# env#]
+       [expr# env# opt#]
        (let []
          (merge
            {:op ~op-keyword
             :env env#
             :val (.eval expr#)}
-           (when @JAVA-OBJ
+           (when (:java-obj opt#)
              {:Expr-obj expr#}))))))
 
 (literal-dispatch Compiler$KeywordExpr :keyword)
@@ -148,10 +155,10 @@
   ;; def
   Compiler$DefExpr
   (analysis->map
-    [expr env]
-    (let [init (analysis->map (field Compiler$DefExpr init expr) env)
+    [expr env opt]
+    (let [init (analysis->map (field Compiler$DefExpr init expr) env opt)
           meta (when-let [meta (field Compiler$DefExpr meta expr)]
-                 (analysis->map meta env))]
+                 (analysis->map meta env opt))]
       (merge 
         {:op :def
          :env (env-location env expr)
@@ -160,95 +167,100 @@
          :init init
          :init-provided (field Compiler$DefExpr initProvided expr)
          :is-dynamic (field Compiler$DefExpr isDynamic expr)}
-        (when @CHILDREN
-          {:children [meta init]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:meta] {}] 
+                      [[:init] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; let
   Compiler$LocalBinding
   (analysis->map
-    [lb env]
+    [lb env opt]
     (let [init (when-let [init (.init lb)]
-                 (analysis->map init env))]
+                 (analysis->map init env opt))]
       (merge
         {:op :local-binding
          :env (inherit-env init env)
          :sym (.sym lb)
          :tag (.tag lb)
          :init init}
-        (when @CHILDREN
-          {:children (when init [init])})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:init] {}] ;optional
+                      ]})
+        (when (:java-obj opt)
           {:LocalBinding-obj lb}))))
 
   Compiler$BindingInit
   (analysis->map
-    [bi env]
-    (let [local-binding (analysis->map (.binding bi) env)
-          init (analysis->map (.init bi) env)]
+    [bi env opt]
+    (let [local-binding (analysis->map (.binding bi) env opt)
+          init (analysis->map (.init bi) env opt)]
       (merge
         {:op :binding-init
          :env (inherit-env init env)
          :local-binding local-binding
          :init init}
-        (when @CHILDREN
-          {:children [local-binding init]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:local-binding] {}]
+                      [[:init] {}]]})
+        (when (:java-obj opt)
           {:BindingInit-obj bi}))))
 
   Compiler$LetExpr
   (analysis->map
-    [expr env]
-    (let [body (analysis->map (.body expr) env)
-          binding-inits (map analysis->map (.bindingInits expr) (repeat env))]
+    [expr env opt]
+    (let [body (analysis->map (.body expr) env opt)
+          binding-inits (map analysis->map (.bindingInits expr) (repeat env) (repeat opt))]
       (merge
         {:op :let
          :env (inherit-env body env)
          :binding-inits binding-inits
          :body body
          :is-loop (.isLoop expr)}
-        (when @CHILDREN
-          {:children (conj (vec binding-inits) body)})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:binding-inits] {:exprs? true}]
+                      [[:body] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; letfn
   Compiler$LetFnExpr
   (analysis->map
-    [expr env]
-    (let [body (analysis->map (.body expr) env)
-          binding-inits (map analysis->map (.bindingInits expr) (repeat env))]
+    [expr env opt]
+    (let [body (analysis->map (.body expr) env opt)
+          binding-inits (map analysis->map (.bindingInits expr) (repeat env) (repeat opt))]
       (merge
         {:op :letfn
          :env (inherit-env body env)
          :body body
          :binding-inits binding-inits}
-        (when @CHILDREN
-          {:children (conj (vec binding-inits) body)})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:binding-inits] {:exprs? true}]
+                      [[:body] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; LocalBindingExpr
   Compiler$LocalBindingExpr
   (analysis->map
-    [expr env]
-    (let [local-binding (analysis->map (.b expr) env)]
+    [expr env opt]
+    (let [local-binding (analysis->map (.b expr) env opt)]
       (merge
         {:op :local-binding-expr
          :env (inherit-env local-binding env)
          :local-binding local-binding
          :tag (.tag expr)}
-        (when @CHILDREN
-          {:children [local-binding]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:local-binding] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; Methods
   Compiler$StaticMethodExpr
   (analysis->map
-    [expr env]
-    (let [args (map analysis->map (field Compiler$StaticMethodExpr args expr) (repeat env))]
+    [expr env opt]
+    (let [args (map analysis->map (field Compiler$StaticMethodExpr args expr) (repeat env) (repeat opt))]
       (merge
         {:op :static-method
          :env (env-location env expr)
@@ -258,16 +270,16 @@
                    (@#'reflect/method->map method))
          :args args
          :tag (field Compiler$StaticMethodExpr tag expr)}
-        (when @CHILDREN
-          {:children args})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:args] {:exprs? true}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   Compiler$InstanceMethodExpr
   (analysis->map
-    [expr env]
-    (let [target (analysis->map (field Compiler$InstanceMethodExpr target expr) env)
-          args (map analysis->map (field Compiler$InstanceMethodExpr args expr) (repeat env))]
+    [expr env opt]
+    (let [target (analysis->map (field Compiler$InstanceMethodExpr target expr) env opt)
+          args (map analysis->map (field Compiler$InstanceMethodExpr args expr) (repeat env) (repeat opt))]
       (merge
         {:op :instance-method
          :env (env-location env expr)
@@ -277,15 +289,16 @@
                    (@#'reflect/method->map method))
          :args args
          :tag (field Compiler$InstanceMethodExpr tag expr)}
-        (when @CHILDREN
-          {:children (cons target args)})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:target] {}] 
+                      [[:args] {:exprs? true}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; Fields
   Compiler$StaticFieldExpr
   (analysis->map
-    [expr env]
+    [expr env opt]
     (let []
       (merge
         {:op :static-field
@@ -295,13 +308,13 @@
          :field (when-let [field (field Compiler$StaticFieldExpr field expr)]
                   (@#'reflect/field->map field))
          :tag (field Compiler$StaticFieldExpr tag expr)}
-        (when @JAVA-OBJ
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   Compiler$InstanceFieldExpr
   (analysis->map
-    [expr env]
-    (let [target (analysis->map (field Compiler$InstanceFieldExpr target expr) env)]
+    [expr env opt]
+    (let [target (analysis->map (field Compiler$InstanceFieldExpr target expr) env opt)]
       (merge
         {:op :instance-field
          :env (env-location env expr)
@@ -311,15 +324,15 @@
                   (@#'reflect/field->map field))
          :field-name (field Compiler$InstanceFieldExpr fieldName expr)
          :tag (field Compiler$InstanceFieldExpr tag expr)}
-        (when @CHILDREN
-          {:children [target]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:target] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   Compiler$NewExpr
   (analysis->map
-    [expr env]
-    (let [args (map analysis->map (.args expr) (repeat env))]
+    [expr env opt]
+    (let [args (map analysis->map (.args expr) (repeat env) (repeat opt))]
       (merge
         {:op :new
          :env env 
@@ -331,109 +344,109 @@
                  (@#'reflect/constructor->map ctor))
          :class (.c expr)
          :args args}
-        (when @CHILDREN
-          {:children args})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:args] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   Compiler$EmptyExpr
   (analysis->map
-    [expr env]
+    [expr env opt]
     (merge
       {:op :empty-expr
        :env env
        :coll (.coll expr)}
-      (when @JAVA-OBJ
+      (when (:java-obj opt)
         {:Expr-obj expr})))
 
   ;; set literal
   Compiler$SetExpr
   (analysis->map
-    [expr env]
-    (let [keys (map analysis->map (.keys expr) (repeat env))]
+    [expr env opt]
+    (let [keys (map analysis->map (.keys expr) (repeat env) (repeat opt))]
       (merge
         {:op :set
          :env env
          :keys keys}
-        (when @CHILDREN
-          {:children keys})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:keys] {:exprs? true}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; vector literal
   Compiler$VectorExpr
   (analysis->map
-    [expr env]
-    (let [args (map analysis->map (.args expr) (repeat env))]
+    [expr env opt]
+    (let [args (map analysis->map (.args expr) (repeat env) (repeat opt))]
       (merge
         {:op :vector
          :env env
          :args args}
-        (when @CHILDREN
-          {:children args})
-        (when @JAVA-OBJ 
+        (when (:children opt)
+          {:children [[[:args] {:exprs? true}]]})
+        (when (:java-obj opt) 
           {:Expr-obj expr}))))
 
   ;; map literal
   Compiler$MapExpr
   (analysis->map
-    [expr env]
-    (let [keyvals (map analysis->map (.keyvals expr) (repeat env))]
+    [expr env opt]
+    (let [keyvals (map analysis->map (.keyvals expr) (repeat env) (repeat opt))]
       (merge
         {:op :map
          :env env
          :keyvals keyvals}
-        (when @CHILDREN
-          {:children keyvals})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:keyvals] {:exprs? true}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; Untyped
   Compiler$MonitorEnterExpr
   (analysis->map
-    [expr env]
-    (let [target (analysis->map (field Compiler$MonitorEnterExpr target expr) env)]
+    [expr env opt]
+    (let [target (analysis->map (field Compiler$MonitorEnterExpr target expr) env opt)]
       (merge
         {:op :monitor-enter
          :env env
          :target target}
-        (when @CHILDREN
-          {:children [target]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:target] {:exprs? true}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   Compiler$MonitorExitExpr
   (analysis->map
-    [expr env]
-    (let [target (analysis->map (field Compiler$MonitorExitExpr target expr) env)]
+    [expr env opt]
+    (let [target (analysis->map (field Compiler$MonitorExitExpr target expr) env opt)]
       (merge
         {:op :monitor-exit
          :env env
          :target target}
-        (when @CHILDREN
-          {:children [target]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:target] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   Compiler$ThrowExpr
   (analysis->map
-    [expr env]
-    (let [exception (analysis->map (field Compiler$ThrowExpr excExpr expr) env)]
+    [expr env opt]
+    (let [exception (analysis->map (field Compiler$ThrowExpr excExpr expr) env opt)]
       (merge
         {:op :throw
          :env env
          :exception exception}
-        (when @CHILDREN
-          {:children [exception]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:exception] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; Invokes
   Compiler$InvokeExpr
   (analysis->map
-    [expr env]
-    (let [fexpr (analysis->map (field Compiler$InvokeExpr fexpr expr) env)
-          args (map analysis->map (field Compiler$InvokeExpr args expr) (repeat env))]
+    [expr env opt]
+    (let [fexpr (analysis->map (field Compiler$InvokeExpr fexpr expr) env opt)
+          args (map analysis->map (field Compiler$InvokeExpr args expr) (repeat env) (repeat opt))]
       (merge
         {:op :invoke
          :env (env-location env expr)
@@ -446,78 +459,79 @@
          :protocol-on (field Compiler$InvokeExpr protocolOn expr)}
         (when-let [m (field Compiler$InvokeExpr onMethod expr)]
           {:method (@#'reflect/method->map m)})
-        (when @CHILDREN
-          {:children (cons fexpr args)})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:fexpr] {}]
+                      [[:args] {:exprs? true}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   Compiler$KeywordInvokeExpr
   (analysis->map
-    [expr env]
-    (let [target (analysis->map (field Compiler$KeywordInvokeExpr target expr) env)
-          kw (analysis->map (field Compiler$KeywordInvokeExpr kw expr) env)]
+    [expr env opt]
+    (let [target (analysis->map (field Compiler$KeywordInvokeExpr target expr) env opt)
+          kw (analysis->map (field Compiler$KeywordInvokeExpr kw expr) env opt)]
       (merge
         {:op :keyword-invoke
          :env (env-location env expr)
          :kw kw
          :tag (field Compiler$KeywordInvokeExpr tag expr)
          :target target}
-        (when @CHILDREN
-          {:children [target]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:target] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; TheVarExpr
   Compiler$TheVarExpr
   (analysis->map
-    [expr env]
+    [expr env opt]
     (merge
       {:op :the-var
        :env env
        :var (.var expr)}
-      (when @JAVA-OBJ
+      (when (:java-obj opt)
         {:Expr-obj expr})))
 
   ;; VarExpr
   Compiler$VarExpr
   (analysis->map
-    [expr env]
+    [expr env opt]
     (merge
       {:op :var
        :env env
        :var (.var expr)
        :tag (.tag expr)}
-      (when @JAVA-OBJ
+      (when (:java-obj opt)
         {:Expr-obj expr})))
 
   ;; UnresolvedVarExpr
   Compiler$UnresolvedVarExpr
   (analysis->map
-    [expr env]
+    [expr env opt]
     (let []
       (merge
         {:op :unresolved-var
          :env env
          :sym (.symbol expr)}
-        (when @JAVA-OBJ
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; ObjExprs
   Compiler$ObjExpr
   (analysis->map
-    [expr env]
+    [expr env opt]
     (merge
       {:op :obj-expr
        :env env
        :tag (.tag expr)}
-      (when @JAVA-OBJ
+      (when (:java-obj opt)
         {:Expr-obj expr})))
 
   ;; FnExpr (extends ObjExpr)
   Compiler$NewInstanceMethod
   (analysis->map
-    [obm env]
-    (let [body (analysis->map (.body obm) env)]
+    [obm env opt]
+    (let [body (analysis->map (.body obm) env opt)]
       (merge
         {:op :new-instance-method
          :env (env-location env obm)
@@ -527,56 +541,56 @@
                                        (field Compiler$ObjMethod argLocals obm))
                                (repeat env))
          :body body}
-        (when @CHILDREN
-          {:children [body]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:body] {}]]})
+        (when (:java-obj opt)
           {:ObjMethod-obj obm}))))
 
   Compiler$FnMethod
   (analysis->map
-    [obm env]
-    (let [body (analysis->map (.body obm) env)
-          required-params (map analysis->map (.reqParms obm) (repeat env))]
+    [obm env opt]
+    (let [body (analysis->map (.body obm) env opt)
+          required-params (map analysis->map (.reqParms obm) (repeat env) (repeat opt))]
       (merge
         {:op :fn-method
          :env env
          :body body
          ;; Map LocalExpr@xx -> LocalExpr@xx
-         ;;:locals (map analysis->map (keys (.locals obm)) (repeat env))
+         ;;:locals (map analysis->map (keys (.locals obm)) (repeat env) (repeat opt))
          :required-params required-params
          :rest-param (let [rest-param (.restParm obm)]
                        (if rest-param
-                         (analysis->map rest-param env)
+                         (analysis->map rest-param env opt)
                          rest-param))}
-        (when @CHILDREN
-          {:children [body]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:body] {}]]})
+        (when (:java-obj opt)
           {:ObjMethod-obj obm}))))
 
   Compiler$FnExpr
   (analysis->map
-    [expr env]
-    (let [methods (map analysis->map (.methods expr) (repeat env))]
+    [expr env opt]
+    (let [methods (map analysis->map (.methods expr) (repeat env) (repeat opt))]
       (merge
         {:op :fn-expr
          :env (env-location env expr)
          :methods methods
          :variadic-method (when-let [variadic-method (.variadicMethod expr)]
-                            (analysis->map variadic-method env))
+                            (analysis->map variadic-method env opt))
          :tag (.tag expr)}
         (when-let [nme (.thisName expr)]
           {:name (symbol nme)})
-        (when @CHILDREN
-          {:children methods})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:methods] {:exprs? true}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; NewInstanceExpr
 ;FIXME find vector of interfaces this implements (I think it's in mmap + IType)
   Compiler$NewInstanceExpr
   (analysis->map
-    [expr env]
-    (let [methods (map analysis->map (field Compiler$NewInstanceExpr methods expr) (repeat env))]
+    [expr env opt]
+    (let [methods (map analysis->map (field Compiler$NewInstanceExpr methods expr) (repeat env) (repeat opt))]
       (merge
         {:op :deftype*
          :name (symbol (.name expr))
@@ -590,77 +604,80 @@
 
          ;(IPersistentSet LocalBinding)
          :fields (set (for [[k v] (field Compiler$ObjExpr fields expr)]
-                        (analysis->map v env)))
+                        (analysis->map v env opt)))
          
          :covariants (field Compiler$NewInstanceExpr covariants expr)
 
          :tag (.tag expr)}
-        (when @CHILDREN
-          {:children methods})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:methods] {:exprs? true}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; InstanceOfExpr
   Compiler$InstanceOfExpr
   (analysis->map
-    [expr env]
-    (let [exp (analysis->map (field Compiler$InstanceOfExpr expr expr) env)]
+    [expr env opt]
+    (let [exp (analysis->map (field Compiler$InstanceOfExpr expr expr) env opt)]
       (merge
         {:op :instance-of
          :env env
          :class (field Compiler$InstanceOfExpr c expr)
          :the-expr exp}
-        (when @CHILDREN
-          {:children [exp]})
-        (when @JAVA-OBJ 
+        (when (:children opt)
+          {:children [[[:exp] {}]]})
+        (when (:java-obj opt) 
           {:Expr-obj expr}))))
 
   ;; MetaExpr
   Compiler$MetaExpr
   (analysis->map
-    [expr env]
-    (let [meta (analysis->map (.meta expr) env)
-          the-expr (analysis->map (.expr expr) env)]
+    [expr env opt]
+    (let [meta (analysis->map (.meta expr) env opt)
+          the-expr (analysis->map (.expr expr) env opt)]
       (merge
         {:op :meta
          :env env
          :meta meta
          :expr the-expr}
-        (when @CHILDREN
-          {:children [meta the-expr]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:meta] {}]
+                      [[:the-expr] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; do
   Compiler$BodyExpr
   (analysis->map
-    [expr env]
-    (let [exprs (map analysis->map (.exprs expr) (repeat env))]
+    [expr env opt]
+    (let [exprs (map analysis->map (.exprs expr) (repeat env) (repeat opt))]
       (merge
         {:op :do
          :env (inherit-env (last exprs) env)
          :exprs exprs}
-        (when @CHILDREN
-          {:children exprs})
-        (when @JAVA-OBJ 
+        (when (:children opt)
+          {:children [[[:exprs] {:exprs? true}]]})
+        (when (:java-obj opt) 
           {:Expr-obj expr}))))
 
   ;; if
   Compiler$IfExpr
   (analysis->map
-    [expr env]
-    (let [test (analysis->map (.testExpr expr) env)
-          then (analysis->map (.thenExpr expr) env)
-          else (analysis->map (.elseExpr expr) env)]
+    [expr env opt]
+    (let [test (analysis->map (.testExpr expr) env opt)
+          then (analysis->map (.thenExpr expr) env opt)
+          else (analysis->map (.elseExpr expr) env opt)]
       (merge
         {:op :if
          :env (env-location env expr)
          :test test
          :then then
          :else else}
-        (when @CHILDREN
-          {:children [test then else]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:test] {}] 
+                      [[:then] {}] 
+                      [[:else] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; case
@@ -668,11 +685,11 @@
   ;;  //(case* expr shift mask default map<minhash, [test then]> table-type test-type skip-check?)
   Compiler$CaseExpr
   (analysis->map
-    [expr env]
-    (let [the-expr (analysis->map (.expr expr) env)
-          tests (map analysis->map (vals (.tests expr)) (repeat env))
-          thens (map analysis->map (vals (.thens expr)) (repeat env))
-          default (analysis->map (.defaultExpr expr) env)]
+    [expr env opt]
+    (let [the-expr (analysis->map (.expr expr) env opt)
+          tests (map analysis->map (vals (.tests expr)) (repeat env) (repeat opt))
+          thens (map analysis->map (vals (.thens expr)) (repeat env) (repeat opt))
+          default (analysis->map (.defaultExpr expr) env opt)]
       (merge
         {:op :case*
          :env (env-location env expr)
@@ -686,63 +703,68 @@
          :test-type (.testType expr)
          :switch-type (.switchType expr)
          :skip-check (.skipCheck expr)}
-        (when @CHILDREN
-          {:children (concat [the-expr] tests thens [default])})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:the-expr]  {}]
+                      [[:tests] {:exprs? true}] 
+                      [[:thens] {:exprs? true}] 
+                      [[:default] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
 
   ;; ImportExpr
   Compiler$ImportExpr
   (analysis->map
-    [expr env]
+    [expr env opt]
     (merge
       {:op :import*
        :env env
        :class-str (.c expr)}
-       (when @JAVA-OBJ
+       (when (:java-obj opt)
          {:Expr-obj expr})))
 
   ;; AssignExpr (set!)
   Compiler$AssignExpr
   (analysis->map
-    [expr env]
-    (let [target (analysis->map (.target expr) env)
-          val (analysis->map (.val expr) env)]
+    [expr env opt]
+    (let [target (analysis->map (.target expr) env opt)
+          val (analysis->map (.val expr) env opt)]
       (merge
         {:op :set!
          :env env
          :target target
          :val val}
-        (when @CHILDREN
-          {:children [target val]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:target] {}] 
+                      [[:val] {}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;;TryExpr
   Compiler$TryExpr$CatchClause
   (analysis->map
-    [ctch env]
-    (let [local-binding (analysis->map (.lb ctch) env)
-          handler (analysis->map (.handler ctch) env)]
+    [ctch env opt]
+    (let [local-binding (analysis->map (.lb ctch) env opt)
+          handler (analysis->map (.handler ctch) env opt)]
       (merge
         {:op :catch
          :env env
          :class (.c ctch)
          :local-binding local-binding
          :handler handler}
-        (when @CHILDREN
-          {:children [local-binding handler]})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:local-binding] {}]
+                      [[:handler] {}]]})
+        (when (:java-obj opt)
           {:CatchClause-obj ctch}))))
 
   Compiler$TryExpr
   (analysis->map
-    [expr env]
-    (let [try-expr (analysis->map (.tryExpr expr) env)
+    [expr env opt]
+    (let [try-expr (analysis->map (.tryExpr expr) env opt)
           finally-expr (when-let [finally-expr (.finallyExpr expr)]
-                         (analysis->map finally-expr env))
-          catch-exprs (map analysis->map (.catchExprs expr) (repeat env))]
+                         (analysis->map finally-expr env opt))
+          catch-exprs (map analysis->map (.catchExprs expr) (repeat env) (repeat opt))]
       (merge
         {:op :try
          :env env
@@ -751,37 +773,40 @@
          :catch-exprs catch-exprs
          :ret-local (.retLocal expr)
          :finally-local (.finallyLocal expr)}
-        (when @CHILDREN
-          {:children (concat [try-expr] (when finally-expr [finally-expr]) catch-exprs)})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:try-expr] {}]
+                      [[:finally-expr] {}]
+                      [[:catch-exprs] {:exprs? true}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   ;; RecurExpr
   Compiler$RecurExpr
   (analysis->map
-    [expr env]
-    (let [loop-locals (map analysis->map (.loopLocals expr) (repeat env))
-          args (map analysis->map (.args expr) (repeat env))]
+    [expr env opt]
+    (let [loop-locals (map analysis->map (.loopLocals expr) (repeat env) (repeat opt))
+          args (map analysis->map (.args expr) (repeat env) (repeat opt))]
       (merge
         {:op :recur
          :env (env-location env expr)
          :loop-locals loop-locals
          :args args}
-        (when @CHILDREN
-          {:children (concat loop-locals args)})
-        (when @JAVA-OBJ
+        (when (:children opt)
+          {:children [[[:loop-locals] {:exprs? true}]
+                      [[:args] {:exprs? true}]]})
+        (when (:java-obj opt)
           {:Expr-obj expr}))))
 
   Compiler$MethodParamExpr
   (analysis->map
-    [expr env]
+    [expr env opt]
     (let []
       (merge
         {:op :method-param
          :env env
          :class (.getJavaClass expr)
          :can-emit-primitive (.canEmitPrimitive expr)}
-        (when @JAVA-OBJ
+        (when (:java-obj opt)
           {:Expr-obj expr})))))
 
 (defn keyword->Context [k]
@@ -793,19 +818,20 @@
 
 (defn- analyze*
   "Must be called after binding the appropriate Compiler and RT dynamic Vars."
-  [env form]
-  (let [context (keyword->Context (:context env))
-        expr-ast (try
-                   (Compiler/analyze context form)
-                   (catch RuntimeException e
-                     (throw (repl/root-cause e))))
-        _ (method-accessor Compiler$Expr 'eval expr-ast [])]
-    (analysis->map expr-ast (merge-with conj (dissoc env :context) {:locals {}}))))
+  ([env form] (analyze* env form {}))
+  ([env form opt]
+   (let [context (keyword->Context (:context env))
+         expr-ast (try
+                    (Compiler/analyze context form)
+                    (catch RuntimeException e
+                      (throw (repl/root-cause e))))
+         _ (method-accessor Compiler$Expr 'eval expr-ast [])]
+     (analysis->map expr-ast (merge-with conj (dissoc env :context) {:locals {}}) opt))))
 
 (defn analyze-one
   "Analyze a single form"
-  [env form]
-  (analyze* env form))
+  ([env form] (analyze-one env form {}))
+  ([env form opt] (analyze* env form opt)))
 
 (defn forms-seq
   "Lazy seq of forms in a Clojure or ClojureScript file."
@@ -864,7 +890,8 @@
 
   eg. (analyze-path (pb-reader-for-ns 'my.ns) 'my-ns 'my-ns)"
   ([source-nsym] (analyze-ns (pb-reader-for-ns source-nsym) source-nsym source-nsym))
-  ([rdr source-path source-nsym]
+  ([rdr source-path source-nsym] (analyze-ns rdr source-path source-nsym {}))
+  ([rdr source-path source-nsym opt]
    (let [eof (reify)
          ^LineNumberingPushbackReader 
          pushback-reader (if (instance? LineNumberingPushbackReader rdr)
@@ -881,7 +908,7 @@
                ;; FIXME shouldn't be source-nsym here
                (let [env {:ns {:name (-> @RT/CURRENT_NS str symbol)} :locals {}}
                      expr-ast (Compiler/analyze (keyword->Context :eval) form)
-                     m (analysis->map expr-ast env)
+                     m (analysis->map expr-ast env opt)
                      _ (method-accessor Compiler$Expr 'eval expr-ast [])]
                  (recur (read pushback-reader nil eof) (conj out m))))))
          (finally
@@ -906,4 +933,17 @@
          (pst)))
   (ast (deftype A [a b]
          Object
-         (toString [this]))))
+         (toString [this])))
+  
+  ;children
+  ; - what about optional keys? eg. :local-binding's :init? do we need an :optional case, or
+  ;   maybe a `:when child-expr` will be sufficient?
+  (let [expr (ast (let [a 1] a) {:children true})]
+    (for [[path {:keys [exprs?]}] (:children expr)
+          :let [in (get-in expr path)]
+          child-expr (if exprs?
+                       in
+                       [in])]
+      child-expr))
+  
+  )
