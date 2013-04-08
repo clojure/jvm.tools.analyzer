@@ -942,13 +942,15 @@
   ;children
   ; - what about optional keys? eg. :local-binding's :init? do we need an :optional case, or
   ;   maybe a `:when child-expr` will be sufficient?
-  (let [expr (ast (let [a 1] a) {:children true})]
-    (for [[path {:keys [exprs?]}] (:children expr)
-          :let [in (get-in expr path)]
-          child-expr (if exprs?
-                       in
-                       [in])]
-      child-expr))
+  (->
+    (let [expr (ast (let [a 1] a) {:children true})]
+      (for [[path {:keys [exprs?]}] (:children expr)
+            :let [in (get-in expr path)]
+            child-expr (if exprs?
+                         in
+                         [in])]
+        child-expr))
+    clojure.pprint/pprint)
 
   (def in (Compiler/analyze Compiler$C/STATEMENT '(seq 1)))
   (class in)
@@ -957,4 +959,4 @@
   (try (.invoke method in (object-array []))
     (catch java.lang.reflect.InvocationTargetException e
       (throw (repl/root-cause e))))
-  )
+    )

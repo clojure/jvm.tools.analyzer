@@ -9,5 +9,7 @@
   
   ;:repositories {"sonatype-oss-public" "https://oss.sonatype.org/content/groups/public/"}
 
+  :profiles {:dev {:repl-options {:port 64363}}}
+
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"])
