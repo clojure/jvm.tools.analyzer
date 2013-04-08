@@ -8,12 +8,12 @@ Supports Clojure 1.4.0 or later.
 
 # Releases and Dependency Information
 
-Latest stable release is 0.3.2.
+Latest stable release is 0.3.5.
 
 Leiningen dependency information:
 
 ```clojure
-[org.clojure/jvm.tools.analyzer "0.3.2"]
+[org.clojure/jvm.tools.analyzer "0.3.5"]
 ```
 
 Maven dependency information:
@@ -22,9 +22,44 @@ Maven dependency information:
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>jvm.tools.analyzer</artifactId>
-  <version>0.3.2</version>
+  <version>0.3.5</version>
 </dependency>
 ```
+
+# Caveat
+
+## Implicit Evalutation
+
+Every AST node is `eval`ed after it is processed by analysis. This is to recognise
+scope introduced by `require` and `refer`, and other global side effects.
+It follows that analysing a `def` will result in it being redefined as if it were
+evaluated.
+
+## Future deprecation
+
+This library will be deprecated if and when a sufficient Clojure-in-Clojure compiler
+is implemented. For now, `jvm.tools.analyzer` is probably your best bet for libraries
+you want to build *today*.
+
+## Fragile Implementation
+
+The implementation consists of reflective calls to the Clojure JVM Compiler to extract
+AST data. It should work with Clojure 1.4.0 or later, but there may be subtle
+changes in c.l.Compiler.java which we don't account for. It is optimised to support the latest
+versions of Clojure (1.5.1, as of 8 April 2013).
+
+## Non-standard AST
+
+The shape of the AST map is exactly based on the Compiler's internal representation. No effort
+has been made to conform to a ClojureScript-like AST. In practice, the main differences are:
+
+- local bindings are wrapped in a `:local-binding-expr` node
+- there are several AST nodes for constants (eg. `:constant`, `:nil`, `:empty-expr`)
+- several interop nodes (no :dot)
+- some ops/fields have different names
+
+I highly recommend browsing the implementation of `clojure.tools.analyzer` to check the current
+state of the AST. It should be familiar if you have experience with the ClojureScript analyzer.
 
 # Usage
 
