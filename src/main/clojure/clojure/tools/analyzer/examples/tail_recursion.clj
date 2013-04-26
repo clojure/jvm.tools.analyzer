@@ -14,8 +14,8 @@
   "Returns a list of the function calls that are in tail position."
   [tree]
   (case (:op tree)
-    :def (safe-mapcat find-tail-ops (rest (:children tree)))
-    :do (recur (last (:children tree)))
+    :def (safe-mapcat find-tail-ops (rest (analyze/children tree)))
+    :do (recur (last (analyze/children tree)))
     :fn-expr (safe-mapcat find-tail-ops (:methods tree))
     :fn-method (recur (:body tree))
 
@@ -73,20 +73,21 @@
                         {:children true}))
 
   (tail-recursive?
-    (analyze/analyze-one {:ns {:name 'clojure.test} :context :eval}
-                         '(defn testing-vars-str
-                            "Returns a string representation of the current test.  Renders names
-                            in *testing-vars* as a list, then the source file and line of
-                            current assertion."
-                            {:added "1.1"}
-                            [m]
-                            (let [{:keys [file line]} m]
-                              (str
-                                ;; Uncomment to include namespace in failure report:
-                                ;;(ns-name (:ns (meta (first *testing-vars*)))) "/ "
-                                (reverse (map #(:name (meta %)) *testing-vars*))
-                                " (" file ":" line ")")))
-                         {:children true}))
+    (binding [*ns* (find-ns 'clojure.test)]
+      (analyze/analyze-one {:ns {:name 'clojure.test} :context :eval}
+                           '(defn testing-vars-str
+                              "Returns a string representation of the current test.  Renders names
+                              in *testing-vars* as a list, then the source file and line of
+                              current assertion."
+                              {:added "1.1"}
+                              [m]
+                              (let [{:keys [file line]} m]
+                                (str
+                                  ;; Uncomment to include namespace in failure report:
+                                  ;;(ns-name (:ns (meta (first *testing-vars*)))) "/ "
+                                  (reverse (map #(:name (meta %)) *testing-vars*))
+                                  " (" file ":" line ")")))
+                           {:children true})))
 
 
   )

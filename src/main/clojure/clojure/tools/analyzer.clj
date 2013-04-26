@@ -1,5 +1,3 @@
-(set! *warn-on-reflection* true)
-
 (ns clojure.tools.analyzer
   "Interface to Compiler's analyze.
   Entry point `analyze-path` and `analyze-one`"
@@ -894,6 +892,7 @@
 
   eg. (analyze-path (pb-reader-for-ns 'my.ns) 'my-ns 'my-ns)"
   ([source-nsym] (analyze-ns (pb-reader-for-ns source-nsym) source-nsym source-nsym))
+  ([source-nsym opt] (analyze-ns (pb-reader-for-ns source-nsym) source-nsym source-nsym opt))
   ([rdr source-path source-nsym] (analyze-ns rdr source-path source-nsym {}))
   ([rdr source-path source-nsym opt]
    (let [eof (reify)
@@ -917,6 +916,18 @@
                  (recur (read pushback-reader nil eof) (conj out m))))))
          (finally
            (pop-thread-bindings)))))))
+
+
+(defn children 
+  "Returns a lazy sequence of the immediate children of the expr in
+  order of evaluation, where defined."
+  [expr]
+  (for [[path {:keys [exprs?]}] (:children expr)
+        :let [in (get-in expr path)]
+        child-expr (if exprs?
+                     in
+                     [in])]
+    child-expr))
 
 (comment
   (ast 

@@ -9,7 +9,7 @@
 (defn defs [expr]
   (apply concat
          (when (= :def (:op expr)) [(:var expr)])
-         (map defs (:children expr))))
+         (map defs (analyze/children expr))))
 
 (defn private-defs [expr]
   (filter #(:private (meta %))
@@ -19,7 +19,7 @@
   (if (= :var (:op expr))
     {(:var expr) 1}
     (apply merge-with +
-           (map var-count (:children expr)))))
+           (map var-count (analyze/children expr)))))
 
 (defn check-usage-of-private-vars [exprs]
   (let [v-count (apply merge-with + (map var-count exprs))]

@@ -9,12 +9,12 @@
 (defn use? [expr]
   (and (= :invoke (:op expr))
        (= :var (-> expr :fexpr :op))
-       (= 'use (-> expr :fexpr :var meta :name))))
+       (= #'use (-> expr :fexpr :var))))
 
 (defn find-and-analyze-use-forms [expr]
   (when (use? expr)
     (warn-on-naked-use expr))
-  (doseq [child-expr (:children expr)]
+  (doseq [child-expr (analyze/children expr)]
     (find-and-analyze-use-forms child-expr)))
 
 (comment
@@ -37,7 +37,8 @@
                   clojure.string
                   clojure.repl
                   clojure.core.protocols
-                  clojure.template])))
+                  clojure.template]
+                (repeat '{:children true}))))
 
   (doseq [exprs analyzed
           exp exprs]

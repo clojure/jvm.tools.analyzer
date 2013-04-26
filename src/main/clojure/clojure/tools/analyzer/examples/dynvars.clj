@@ -17,7 +17,7 @@
 (defn find-and-check-defs [expr]
   (when (= :def (:op expr))
     (check-def expr))
-  (doseq [child-expr (:children expr)]
+  (doseq [child-expr (analyze/children expr)]
     (find-and-check-defs child-expr)))
 
 (comment

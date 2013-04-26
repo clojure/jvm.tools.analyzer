@@ -34,7 +34,7 @@
     :instance-field (check-instance-field exp)
     nil)
 
-  (doseq [c (:children exp)]
+  (doseq [c (analyze/children exp)]
     (check-for-reflection c)))
 
 (comment

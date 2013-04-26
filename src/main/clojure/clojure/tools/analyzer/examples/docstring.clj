@@ -17,7 +17,7 @@
 (defn find-and-check-defs [exp]
   (when (= :def (:op exp))
     (check-def exp))
-  (doseq [child-exp (:children exp)]
+  (doseq [child-exp (analyze/children exp)]
     (find-and-check-defs child-exp)))
 
 ;; Examples
@@ -36,7 +36,8 @@
                 clojure.string
                 clojure.repl
                 clojure.core.protocols
-                clojure.template])))
+                clojure.template]
+              (repeat '{:children true}))))
 
 (doseq [exprs analyzed
         exp exprs]
