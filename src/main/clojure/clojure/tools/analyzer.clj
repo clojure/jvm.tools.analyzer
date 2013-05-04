@@ -336,11 +336,11 @@
     (let [args (map analysis->map (.args expr) (repeat env) (repeat opt))]
       (merge
         {:op :new
-         :env env 
-              ; should be there but isn't
-              ;(assoc env
-        ;             :line (.line expr)
-        ;             )
+         :env 
+         ; borrow line numbers from arguments
+         (if-let [iexpr (first (filter :line (map :env args)))]
+           (inherit-env iexpr env)
+           env)
          :ctor (when-let [ctor (.ctor expr)]
                  (@#'reflect/constructor->map ctor))
          :class (.c expr)
@@ -845,13 +845,17 @@
           (lazy-seq (cons form (forms-seq rdr))))))))
        
 (defn uri-for-ns 
-  "Returns a URI representing the namespace"
+  "Returns a URI representing the namespace. Throws an
+  exception if URI not found."
   [ns-sym]
   (let [source-path (-> (name ns-sym)
                       (string/replace "." "/")
                       (string/replace "-" "_")
-                      (str ".clj"))]
-    (io/resource source-path)))
+                      (str ".clj"))
+        uri (io/resource source-path)]
+    (when-not uri
+      (throw (Exception. (str "No file found for namespace " ns-sym))))
+    uri))
 
 (defn ^LineNumberingPushbackReader
   pb-reader-for-ns
