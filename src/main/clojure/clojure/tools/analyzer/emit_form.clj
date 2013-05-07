@@ -1,6 +1,5 @@
 (ns clojure.tools.analyzer.emit-form
-  (:import (clojure.lang Var))
-  (:require [clojure.tools.analyzer :refer [ast]]))
+  (:import (clojure.lang Var)))
 
 (def emit-default ::emit-default)
 

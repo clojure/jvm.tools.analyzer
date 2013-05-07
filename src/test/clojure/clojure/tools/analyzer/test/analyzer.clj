@@ -1,4 +1,5 @@
 (ns clojure.tools.analyzer.test.analyzer
+  (:refer-clojure :exclude [macroexpand])
   (:require [clojure.test :refer :all]
             [clojure.tools.analyzer :refer :all]))
 

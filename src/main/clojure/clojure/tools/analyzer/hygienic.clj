@@ -1,8 +1,9 @@
 (ns clojure.tools.analyzer.hygienic
+  (:refer-clojure :exclude [macroexpand])
   (:require [clojure.tools.analyzer
              [fold :refer [derive-default-fold add-fold-case fold-expr]]
              [emit-form :refer [map->form derive-emit-default]]]
-            [clojure.tools.analyzer]))
+            [clojure.tools.analyzer :as ana]))
 
 (declare hygienic-emit hygienic-ast)
 
@@ -22,6 +23,14 @@
 
 (def hsym-key ::hygienic-sym)
 (def hname-key ::hygienic-name)
+
+(defn macroexpand 
+  "Fully macroexpand a form, using hygiene."
+  [f]
+  (-> f
+      ana/analyze-form
+      ast-hy
+      emit-hy))
 
 ;; emit
 

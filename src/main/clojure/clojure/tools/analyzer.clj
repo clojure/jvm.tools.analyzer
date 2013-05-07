@@ -1,6 +1,7 @@
 (ns clojure.tools.analyzer
   "Interface to Compiler's analyze.
   Entry point `analyze-path` and `analyze-one`"
+  (:refer-clojure :exclude [macroexpand])
   (:import (java.io LineNumberReader InputStreamReader PushbackReader)
            (clojure.lang RT LineNumberingPushbackReader Compiler$DefExpr Compiler$LocalBinding Compiler$BindingInit Compiler$LetExpr
                          Compiler$LetFnExpr Compiler$StaticMethodExpr Compiler$InstanceMethodExpr Compiler$StaticFieldExpr
@@ -17,7 +18,9 @@
             [clojure.java.io :as io]
             [clojure.repl :as repl]
             [clojure.string :as string]
-            [clojure.tools.analyzer.util :as util]))
+            [clojure.tools.analyzer
+             [util :as util]
+             [emit-form :as emit-form]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interface
@@ -47,6 +50,13 @@
   ([form] `(ast ~form {}))
   ([form opt]
    `(analyze-form '~form ~opt)))
+
+(defn macroexpand 
+  "Fully macroexpand a form."
+  [f]
+  (-> f
+      analyze-form
+      emit-form/emit-form))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Utils
