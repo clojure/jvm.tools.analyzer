@@ -26,7 +26,7 @@ Maven dependency information:
 </dependency>
 ```
 
-# Caveat
+# Caveats
 
 ## Implicit Evalutation
 
@@ -161,6 +161,13 @@ clojure.tools.analyzer=> (-> (ast 1) e/emit-form)
 clojure.tools.analyzer=> (-> (ast [(+ 1 2)]) e/emit-form)
 [(clojure.lang.Numbers/add 1 2)]
 ```
+
+# Macroexpander
+
+Use `clojure.tools.analyzer/macroexpand` as a substitute
+for `macroexpand` for fully macroexpanding forms.
+
+`clojure.tools.analyzer.hygienic/macroexpand` returns a hygienic form.
 
 # Known Issues
 

@@ -1,6 +1,11 @@
 # Changelog
 
+0.4.0
+- Add macroexpanders
+- Increment minor version because of breaking changes to :children
+
 0.3.5
+BREAKING CHANGES
 - Eliminate CHILDREN and JAVA-OBJ global state
   - AST ops now accept an optional map of options
   eg. `(ast (let [a 1] a) {:children true})`
