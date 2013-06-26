@@ -68,6 +68,10 @@
 (defmethod map->form [:map emit-default] [{:keys [keyvals]} mode] (apply hash-map (map #(map->form % mode) keyvals)))
 (defmethod map->form [:set emit-default] [{:keys [keys]} mode] (set (map #(map->form % mode) keys)))
 
+(defmethod map->form [:set! emit-default]
+  [{:keys [target val]} mode]
+  `(set! ~(map->form target mode) ~(map->form val mode)))
+
 (defmethod map->form [:fn-expr emit-default]
   [{:keys [name methods]} mode]
   (list* 'fn* 
@@ -194,6 +198,7 @@
 (comment
   (defmacro frm [f]
     `(-> (ast ~f) emit-form))
+  (require '[clojure.tools.analyzer :refer [ast]])
 
   (frm 1)
   (frm :a)
@@ -270,4 +275,5 @@
    (frm (.a 1))
   ;instance method
    (frm (.cancel (java.util.concurrent.FutureTask. #()) 1))
+  (frm (fn [] (set! *warn-on-reflection* true)))
 )
