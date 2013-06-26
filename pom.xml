@@ -34,8 +34,13 @@
     </dependency>-->
     <dependency>
       <groupId>org.clojure</groupId>
+      <artifactId>core.typed</artifactId>
+      <version>0.1.17</version>
+    </dependency>
+    <dependency>
+      <groupId>org.clojure</groupId>
       <artifactId>clojure</artifactId>
-      <version>1.4.0</version>
+      <version>1.5.1</version>
     </dependency>
   </dependencies>
 

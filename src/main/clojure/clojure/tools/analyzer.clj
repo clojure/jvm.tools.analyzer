@@ -13,26 +13,37 @@
                          Compiler$MapExpr Compiler$IfExpr Compiler$KeywordInvokeExpr Compiler$InstanceFieldExpr Compiler$InstanceOfExpr
                          Compiler$CaseExpr Compiler$Expr Compiler$SetExpr Compiler$MethodParamExpr Compiler$KeywordExpr
                          Compiler$ConstantExpr Compiler$NumberExpr Compiler$NilExpr Compiler$BooleanExpr Compiler$StringExpr
-                         Compiler$ObjMethod Compiler$Expr))
+                         Compiler$ObjMethod Compiler$Expr
+                         Keyword Seqable Var Symbol IPersistentSet)
+           (java.lang.reflect Method))
   (:require [clojure.reflect :as reflect]
             [clojure.java.io :as io]
             [clojure.repl :as repl]
             [clojure.string :as string]
-            [clojure.tools.analyzer
+            (clojure.tools.analyzer
              [util :as util]
-             [emit-form :as emit-form]]))
+             [emit-form :as emit-form]
+             [types :refer [Expr]])
+            [clojure.core.typed :refer [ann def-alias check-ns AnyInteger declare-names defprotocol>
+                                        ann-protocol typed-deps]]))
+
+;TODO use canEmitPrimitive
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interface
 
 (declare analyze-one)
 
+(ann analyze-form-in-ns (Fn [Symbol Any -> Expr]
+                            [Symbol Any AnalyzeOpt -> Expr]))
 (defn analyze-form-in-ns 
   ([nsym form] (analyze-form-in-ns nsym form {}))
   ([nsym form opt]
    (analyze-one {:ns {:name nsym} :context :eval}
                 form opt)))
 
+(ann analyze-form (Fn [Any -> Expr]
+                      [Any AnalyzeOpt -> Expr]))
 (defn analyze-form 
   ([form] (analyze-form form {}))
   ([form opt] (analyze-form-in-ns (ns-name *ns*) form opt)))
@@ -51,6 +62,7 @@
   ([form opt]
    `(analyze-form '~form ~opt)))
 
+(ann macroexpand [Any -> Any])
 (defn macroexpand 
   "Fully macroexpand a form."
   [f]
@@ -75,6 +87,7 @@
              (str "Class " (resolve class-obj) " and field " field " is already public")))
    `(field-accessor ~class-obj '~field ~obj)))
 
+(ann field-accessor [Class java.lang.reflect.Field String -> Any])
 (defn- field-accessor [^Class class-obj field obj]
   (let [^java.lang.reflect.Field 
         field (.getDeclaredField class-obj (name field))]
@@ -84,6 +97,7 @@
         (boolean ret)
         ret))))
 
+(ann method-accessor [Class java.lang.reflect.Method (U nil Object) (Seqable Class) Any * -> Any])
 (defn- method-accessor [^Class class-obj method obj types & args]
   (let [^java.lang.reflect.Method 
         method (.getMethod class-obj (name method) (into-array Class types))]
@@ -93,12 +107,14 @@
       (catch java.lang.reflect.InvocationTargetException e
         (throw (repl/root-cause e))))))
 
+(ann when-column-map [Expr -> Env])
 (defn- when-column-map [expr]
   (let [field (try (.getDeclaredField (class expr) "column")
                 (catch Exception e))]
     (when field
       {:column (field-accessor (class expr) 'column expr)})))
 
+(ann when-line-map [Expr -> Env])
 (defn- when-line-map [expr]
   (let [^java.lang.reflect.Method
         method (try (.getMethod (class expr) "line" (into-array Class []))
@@ -109,18 +125,21 @@
       method {:line (method-accessor (class expr) 'line expr [])}
       field {:line (field-accessor (class expr) 'line expr)})))
 
+(ann when-source-map [Expr -> Env])
 (defn- when-source-map [expr]
   (let [field (try (.getDeclaredField (class expr) "source")
                 (catch Exception e))]
     (when field
       {:source (field-accessor (class expr) 'source expr)})))
 
+(ann env-location [Env Expr -> Env])
 (defn- env-location [env expr]
   (merge env
          (when-line-map expr)
          (when-column-map expr)
          (when-source-map expr)))
 
+(ann inherit-env [Expr Env -> Env])
 (defn- inherit-env [expr env]
   (merge env
          (when-let [line (-> expr :env :line)]
@@ -130,7 +149,10 @@
          (when-let [source (-> expr :env :source)]
            {:source source})))
 
-(defprotocol AnalysisToMap
+(ann-protocol AnalysisToMap
+              analysis->map
+              [AnalysisToMap Any AnalyzeOpt -> Expr])
+(defprotocol> AnalysisToMap
   (analysis->map [aobj env opt]
     "Recursively converts the output of the Compiler's analysis to a map. Takes
     a map of options:
@@ -138,6 +160,24 @@
       when true, include a :children key with all child expressions of each node
     - :java-obj
       when true, include a :java-obj key with the node's corresponding Java object"))
+
+(def ^:private ^Method 
+  fn-method-arg-types
+  (doto
+    (first 
+      (filter (fn [^java.lang.reflect.Method m] 
+                (= (.getName m) "getArgTypes"))
+              (.getDeclaredMethods Compiler$FnMethod)))
+    (.setAccessible true)))
+
+(def ^:private ^Method 
+  fn-method-return-type
+  (doto
+    (first 
+      (filter (fn [^java.lang.reflect.Method m] 
+                (= (.getName m) "getReturnType"))
+              (.getDeclaredMethods Compiler$FnMethod)))
+    (.setAccessible true)))
 
 ;; Literals extending abstract class Compiler$LiteralExpr and have public value fields
 
@@ -573,7 +613,9 @@
          :rest-param (let [rest-param (.restParm obm)]
                        (if rest-param
                          (analysis->map rest-param env opt)
-                         rest-param))}
+                         rest-param))
+         :arg-types (seq (.invoke fn-method-arg-types obm (object-array [])))
+         :return-type (.invoke fn-method-return-type obm (object-array []))}
         (when (:children opt)
           {:children [[[:body] {}]]})
         (when (:java-obj opt)
@@ -840,12 +882,13 @@
          _ (method-accessor (class expr-ast) 'eval expr-ast [])]
      (analysis->map expr-ast (merge-with conj (dissoc env :context) {:locals {}}) opt))))
 
+(ann analyze-one [Any Any AnalyzeOpt -> Expr])
 (defn analyze-one
   "Analyze a single form"
   ([env form] (analyze-one env form {}))
   ([env form opt] (analyze* env form opt)))
 
-(defn forms-seq
+#_(defn forms-seq
   "Lazy seq of forms in a Clojure or ClojureScript file."
   [^java.io.PushbackReader rdr]
   (let [eof (reify)]
@@ -854,6 +897,7 @@
         (when-not (identical? form eof)
           (lazy-seq (cons form (forms-seq rdr))))))))
        
+(ann uri-for-ns [Symbol -> java.net.URL])
 (defn uri-for-ns 
   "Returns a URI representing the namespace. Throws an
   exception if URI not found."
@@ -867,6 +911,7 @@
       (throw (Exception. (str "No file found for namespace " ns-sym))))
     uri))
 
+(ann pb-reader-for-ns [Symbol -> LineNumberingPushbackReader])
 (defn ^LineNumberingPushbackReader
   pb-reader-for-ns
   "Returns a LineNumberingPushbackReader for namespace ns-sym"
@@ -874,6 +919,8 @@
   (let [uri (uri-for-ns ns-sym)]
     (LineNumberingPushbackReader. (io/reader uri))))
 
+(ann Compiler-members Any)
+(ann RT-members Any)
 (defonce ^:private Compiler-members (set (map :name (:members (reflect/type-reflect RT)))))
 (defonce ^:private RT-members (set (map :name (:members (reflect/type-reflect RT)))))
 
@@ -899,6 +946,10 @@
      ~(when (RT-members 'DATA_READERS)
         `{RT/DATA_READERS @RT/DATA_READERS})))
 
+(ann analyze-ns (Fn [Symbol -> (Seqable Expr)]
+                    [Symbol AnalyzeOpt -> (Seqable Expr)]
+                    [LineNumberingPushbackReader Symbol Symbol -> (Seqable Expr)]
+                    [LineNumberingPushbackReader Symbol Symbol AnalyzeOpt -> (Seqable Expr)]))
 (defn analyze-ns
   "Takes a LineNumberingPushbackReader and a namespace symbol.
   Returns a vector of maps, with keys :op, :env. If expressions
@@ -931,7 +982,7 @@
          (finally
            (pop-thread-bindings)))))))
 
-
+(ann children [Expr -> (Seqable Expr)])
 (defn children 
   "Returns a lazy sequence of the immediate children of the expr in
   order of evaluation, where defined."
