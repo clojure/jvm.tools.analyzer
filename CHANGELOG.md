@@ -1,5 +1,11 @@
 # Changelog
 
+0.4.2
+- Add set! to map->form
+
+0.4.1
+- Remove tools.trace for Maven builds (still in project.clj)
+
 0.4.0
 - Add macroexpanders
 - Increment minor version because of breaking changes to :children
