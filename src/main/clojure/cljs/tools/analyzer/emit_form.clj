@@ -1,5 +1,6 @@
 (ns cljs.tools.analyzer.emit-form
-  (:require [cljs.analyzer :as ana]
+  (:require [cljs.compiler]
+            [cljs.analyzer :as ana]
             [cljs.core]
             [clojure.string :as str]))
 

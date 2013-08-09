@@ -3,6 +3,8 @@
   (:require [cljs.tools.analyzer.fold :refer [derive-default-fold add-fold-case fold-expr]]
             [cljs.tools.analyzer.emit-form :as emit :refer [map->form derive-emit-default]]
             [cljs.tools.analyzer :as ana]
+            [cljs.analyzer]
+            [cljs.compiler]
             [cljs.core]))
 
 (declare hygienic-emit hygienic-ast)
