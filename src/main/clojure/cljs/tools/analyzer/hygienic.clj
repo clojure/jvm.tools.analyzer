@@ -243,4 +243,8 @@
                    (a [b c] b)]
              (a b c)))
     ast-hy emit-hy)
+
+  (-> (binding [cljs.analyzer/*cljs-ns* cljs.analyzer/*cljs-ns*]
+        (-> (ast (ns foo))
+            ast-hy emit-hy)))
   )

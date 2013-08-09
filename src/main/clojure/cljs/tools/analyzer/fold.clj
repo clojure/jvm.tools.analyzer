@@ -115,3 +115,5 @@
                                (doall
                                  (map #(update-in % [:init] expr-rec) bes))))
       (update-in [:expr] expr-rec))))
+
+(add-default-fold-case :ns return-first)
