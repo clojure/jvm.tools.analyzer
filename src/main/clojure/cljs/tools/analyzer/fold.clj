@@ -117,3 +117,8 @@
       (update-in [:expr] expr-rec))))
 
 (add-default-fold-case :ns return-first)
+
+(add-default-fold-case :def
+  (fn [expr _]
+    (-> expr
+      (update-in [:init] #(if % (expr-rec %) %)))))

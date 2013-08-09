@@ -108,7 +108,6 @@
        {{scope ::scope} :locals}]
     (let [[hy-name scope] (hygienic-name name scope)
           fields (-> expr :form meta :cljs.analyzer/fields)
-          _ (prn (-> expr :form meta))
           hy-methods (map #(hygienic-fn-method % scope fields) methods)]
       (assoc expr
              :name hy-name
@@ -128,7 +127,6 @@
 ;fn-method
 (defn hygienic-fn-method [{:keys [params expr] :as method-expr} scope fields]
   (let [; extend-type sometimes puts implicit fields in fn* metadata
-        _ (prn fields)
         scope (reduce (fn [scope fld] (add-scope scope fld fld))
                       scope
                       fields)
@@ -246,5 +244,9 @@
 
   (-> (binding [cljs.analyzer/*cljs-ns* cljs.analyzer/*cljs-ns*]
         (-> (ast (ns foo))
+            ast-hy emit-hy)))
+
+  (-> (binding [cljs.analyzer/*cljs-ns* cljs.analyzer/*cljs-ns*]
+        (-> (ast (def a))
             ast-hy emit-hy)))
   )

@@ -116,7 +116,9 @@
 
 (def-default-emit-method :def
   [{:keys [name init] :as e}]
-  (list 'def name (map->form init)))
+  (list* 'def (symbol (clojure.core/name name)) 
+        (when init
+          [(map->form init)])))
 
 (def-default-emit-method :deftype*
   [{:keys [t fields] :as e}]
@@ -142,7 +144,6 @@
 (def-default-emit-method :ns
   [{:keys [form] :as e}]
   form)
-
 
 (comment
   (do (require '[cljs.tools.analyzer :refer [ast]])
@@ -238,4 +239,10 @@
 
   (binding [cljs.analyzer/*cljs-ns* cljs.analyzer/*cljs-ns*]
     (frm (ns foo (:require [foo]))))
+
+  (binding [cljs.analyzer/*cljs-ns* cljs.analyzer/*cljs-ns*]
+    (frm (def a)))
+
+  (binding [cljs.analyzer/*cljs-ns* cljs.analyzer/*cljs-ns*]
+    (frm (def a 1)))
 )
