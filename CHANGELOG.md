@@ -1,5 +1,8 @@
 # Changelog
 
+0.4.3
+- Support Clojurescript
+
 0.4.2
 - Add set! to map->form
 

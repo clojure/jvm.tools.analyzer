@@ -26,7 +26,7 @@ Maven dependency information:
 </dependency>
 ```
 
-# Caveats
+# Caveats (of provided Clojure AST analysis)
 
 ## Implicit Evalutation
 
@@ -61,7 +61,7 @@ has been made to conform to a ClojureScript-like AST. In practice, the main diff
 I highly recommend browsing the implementation of `clojure.tools.analyzer` to check the current
 state of the AST. It should be familiar if you have experience with the ClojureScript analyzer.
 
-# Usage
+# Usage (Clojure)
 
 ## Generating AST from syntax
 
@@ -204,6 +204,29 @@ analyses to `clojure.core/require`.
         require))
   :exprs last :var)
 ;=> #'clojure.core/require
+```
+
+# Usage (Clojurescript)
+
+All vars are identical to the Clojure implementation, where relevant,
+except the namespace prefix is `cljs.tools.analyzer` instead of
+`clojure.tools.analyzer`.
+
+Some examples:
+
+Normal AST generation:
+
+```clojure
+(cljs.tools.analyzer/ast 1)
+;=> {:op :constant, :env {:ns {:defs {a {:column 18, :line 2, :file nil, :name cljs.user/a}}, :name cljs.user}, :context :statement, :locals {}}, :form 1}
+```
+
+Hygienic transformation:
+
+```clojure
+(cljs.tools.analyzer.hygienic/macroexpand
+  '(let [a 1 a a b a a a] a))
+;=> (let* [a 1 a11306 a b a11306 a11307 a11306] (do a11307))
 ```
 
 # Todo
