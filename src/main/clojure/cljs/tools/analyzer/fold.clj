@@ -42,6 +42,12 @@
       (update-in [:items] map-expr-rec)
       (update-in [:children] map-expr-rec))))
 
+(add-default-fold-case :map
+  (fn [expr _]
+    (-> expr
+      (update-in [:keys] map-expr-rec)
+      (update-in [:vals] map-expr-rec))))
+
 (add-default-fold-case :let
   (fn [expr _]
     (-> expr
