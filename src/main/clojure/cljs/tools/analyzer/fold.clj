@@ -29,8 +29,7 @@
   (fn [expr _]
     (-> expr
       (update-in [:f] expr-rec)
-      (update-in [:args] map-expr-rec)
-      (update-in [:children] map-expr-rec))))
+      (update-in [:args] map-expr-rec))))
 
 (add-default-fold-case :var return-first)
 
@@ -39,8 +38,17 @@
 (add-default-fold-case :vector
   (fn [expr _]
     (-> expr
-      (update-in [:items] map-expr-rec)
-      (update-in [:children] map-expr-rec))))
+      (update-in [:items] map-expr-rec))))
+
+(add-default-fold-case :set
+  (fn [expr _]
+    (-> expr
+      (update-in [:items] map-expr-rec))))
+
+(add-default-fold-case :list
+  (fn [expr _]
+    (-> expr
+      (update-in [:items] map-expr-rec))))
 
 (add-default-fold-case :map
   (fn [expr _]
@@ -54,8 +62,7 @@
       (update-in [:bindings] (fn [bes] 
                                (doall
                                  (map #(update-in % [:init] expr-rec) bes))))
-      (update-in [:expr] expr-rec)
-      (update-in [:children] map-expr-rec))))
+      (update-in [:expr] expr-rec))))
 
 (add-default-fold-case :do
   (fn [expr _]

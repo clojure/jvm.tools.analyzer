@@ -42,6 +42,10 @@
   [{:keys [items] :as e}]
   (mapv map->form items))
 
+(def-default-emit-method :list
+  [{:keys [items] :as e}]
+  (list* (mapv map->form items)))
+
 (def-default-emit-method :js
   [{:keys [segs args] :as e}]
   (list* 'js* (str/join "~{}" segs) (doall (map map->form args))))
@@ -104,7 +108,7 @@
   [{:keys [methods name] :as e}]
   (list* 'fn* 
          (concat (when name
-                   [name])
+                   [(:name name)])
                  (doall (map (fn [{:keys [params variadic expr]}]
                                (list (vec (concat (if variadic
                                                     (butlast (map :name params))
@@ -146,9 +150,9 @@
   form)
 
 (comment
-  (do (require '[cljs.tools.analyzer :refer [ast]])
-      (defmacro frm [f]
-        `(-> (ast ~f) emit-form)))
+  (require '[cljs.tools.analyzer :refer [ast]])
+  (defmacro frm [f]
+    `(-> (ast ~f) emit-form))
 
   (frm 1)
   (frm :a)
@@ -190,6 +194,7 @@
   (frm nil)
   (frm (def a 1))
   (frm (defn ab [a] a))
+  (frm (fn ab [a] a))
 
   (frm (loop [a 1] (recur 1)))
 

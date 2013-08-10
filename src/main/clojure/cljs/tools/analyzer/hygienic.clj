@@ -106,11 +106,11 @@
   :fn
   (fn [{:keys [name methods] :as expr}
        {{scope ::scope} :locals}]
-    (let [[hy-name scope] (hygienic-name name scope)
+    (let [[hy-name scope] (hygienic-name (:name name) scope)
           fields (-> expr :form meta :cljs.analyzer/fields)
           hy-methods (map #(hygienic-fn-method % scope fields) methods)]
       (assoc expr
-             :name hy-name
+             :name (assoc name :name hy-name)
              :methods hy-methods))))
 
 (defn hygienic-lbs [lbs scope]
@@ -192,6 +192,7 @@
   (-> (ast (let [a 1 a a b a a a] a)) ast-hy emit/emit-form)
 
   (-> (ast (fn a [a a] a)) ast-hy emit-hy)
+  (-> (ast (let [a 1] (fn a [a a] a))) ast-hy emit-hy)
   (-> (ast (fn [a a & a] a)) ast-hy emit-hy)
   (-> (ast (let [a 1] (fn a [] a))) ast-hy emit-hy)
   (-> (ast (let [a 1] (try a (catch Exception a a)))) #_ast-hy emit-hy)
@@ -252,4 +253,13 @@
 
   (-> (ast {1 1})
       ast-hy emit-hy)
+
+  (-> (ast #{1})
+      ast-hy emit-hy)
+  (-> (ast (let [a 1 a a] `('~a 2)))
+      :expr
+      :ret :op)
+  (-> (ast (let [a 1 a a] `('~a 2)))
+      ast-hy
+      emit-hy)
   )
