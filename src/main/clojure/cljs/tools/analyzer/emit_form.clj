@@ -108,11 +108,11 @@
   [{:keys [methods name] :as e}]
   (list* 'fn* 
          (concat (when name
+                   (assert (symbol? (:name name)))
                    [(:name name)])
                  (doall (map (fn [{:keys [params variadic expr]}]
-                               (list (vec (concat (if variadic
-                                                    (butlast (map :name params))
-                                                    (map :name params))
+                               (list (vec (concat ((if variadic butlast identity)
+                                                   (map :name params))
                                                   (when variadic
                                                     ['& (:name (last params))])))
                                      (map->form expr)))
