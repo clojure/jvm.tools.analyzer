@@ -63,33 +63,34 @@
   {:pre [sym hy-sym scope]}
   (assoc scope sym hy-sym))
 
-;let
-(add-fold-case ::hygienic
-  :let
-  (fn [{:keys [bindings expr] :as let-expr}
-       {{scope ::scope} :locals :as locals}]
-    {:pre [bindings expr]}
-    (assert scope locals)
-    (let [[hy-binding-inits scope]
-          (reduce (fn [[hy-binding-inits scope] binding-init]
-                    {:pre [(vector? hy-binding-inits)]}
-                    (let [sym (-> binding-init :name)
-                          _ (assert (symbol? sym))
-                          update-init #(hygienic-ast % scope)
-                          hy-sym (hygienic-sym scope sym)
-                          _ (assert (symbol? hy-sym))
-                          hy-binding-init (-> binding-init
+(defn hygienic-let-and-loop
+  [{:keys [bindings expr] :as let-loop-expr}
+   {{scope ::scope} :locals :as locals}]
+  {:pre [bindings expr]}
+  (assert scope locals)
+  (let [[hy-binding-inits scope]
+        (reduce (fn [[hy-binding-inits scope] binding-init]
+                  {:pre [(vector? hy-binding-inits)]}
+                  (let [sym (-> binding-init :name)
+                        _ (assert (symbol? sym))
+                        update-init #(hygienic-ast % scope)
+                        hy-sym (hygienic-sym scope sym)
+                        _ (assert (symbol? hy-sym))
+                        hy-binding-init (-> binding-init
                                             (update-in [:init] update-init)
                                             (assoc-in [:name] hy-sym))
-                          new-scope (add-scope scope sym hy-sym)]
-                      [(conj hy-binding-inits hy-binding-init) new-scope]))
-                  [[] scope] bindings)
+                        new-scope (add-scope scope sym hy-sym)]
+                    [(conj hy-binding-inits hy-binding-init) new-scope]))
+                [[] scope] bindings)
 
-          ;with new scope
-          hy-body (hygienic-ast expr scope)]
-      (assoc let-expr 
-             :bindings hy-binding-inits 
-             :expr hy-body))))
+        ;with new scope
+        hy-body (hygienic-ast expr scope)]
+    (assoc let-loop-expr 
+           :bindings hy-binding-inits 
+           :expr hy-body)))
+;let, loop
+(add-fold-case ::hygienic :let hygienic-let-and-loop)
+(add-fold-case ::hygienic :loop hygienic-let-and-loop)
 
 (defn hygienic-name [name scope]
   (let [hy-name (when name

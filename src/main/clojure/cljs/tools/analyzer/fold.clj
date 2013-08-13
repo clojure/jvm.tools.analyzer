@@ -64,6 +64,19 @@
                                  (map #(update-in % [:init] expr-rec) bes))))
       (update-in [:expr] expr-rec))))
 
+(add-default-fold-case :loop
+  (fn [expr _]
+    (-> expr
+      (update-in [:bindings] (fn [bes] 
+                               (doall
+                                 (map #(update-in % [:init] expr-rec) bes))))
+      (update-in [:expr] expr-rec))))
+
+(add-default-fold-case :recur
+  (fn [expr _]
+    (-> expr
+      (update-in [:exprs] map-expr-rec))))
+
 (add-default-fold-case :do
   (fn [expr _]
     (-> expr
