@@ -1,5 +1,3 @@
-(set! *warn-on-reflection* false)
-
 (ns clojure.tools.analyzer.examples.reflection
   "Same as *warn-on-reflection*"
   (:require [clojure.tools.analyzer :as analyze]))
