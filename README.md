@@ -229,6 +229,13 @@ Hygienic transformation:
 ;=> (let* [a 1 a11306 a b a11306 a11307 a11306] (do a11307))
 ```
 
+# Developer Information
+
+- [Github Project](https://github.com/clojure/jvm.tools.analyzer)
+- [Bug Tracker](http://dev.clojure.org/jira/browse/JVMTA)
+- [Continuous Integration](http://build.clojure.org/job/jvm.tools.analyzer/)
+- [Compatibility Test Matrix](http://build.clojure.org/job/jvm.tools.analyzer-test-matrix/)
+
 # Todo
 
 - analyze a leiningen `project.clj` file
