@@ -148,3 +148,9 @@
   (fn [expr _]
     (-> expr
       (update-in [:init] #(if % (expr-rec %) %)))))
+
+(add-default-fold-case :meta
+  (fn [expr _]
+    (-> expr
+      (update-in [:expr] expr-rec)
+      (update-in [:meta] expr-rec))))
