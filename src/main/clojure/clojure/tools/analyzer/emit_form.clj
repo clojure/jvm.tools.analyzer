@@ -194,11 +194,19 @@
         test-type
         skip-check))
 
+(defmethod map->form [:meta emit-default]
+  [{:keys [meta expr]} mode]
+  (with-meta (map->form expr mode)
+             (let [m (map->form meta mode)]
+               (if (list? m)
+                 ;sometimes metadata is quoted. No idea why/where.
+                 (second m)
+                 m))))
 
 (comment
   (defmacro frm [f]
     `(-> (ast ~f) emit-form))
-  (require '[clojure.tools.analyzer :refer [ast]])
+  (require '[clojure.tools.analyzer :refer [ast analyze-form]])
 
   (frm 1)
   (frm :a)
@@ -276,4 +284,7 @@
   ;instance method
    (frm (.cancel (java.util.concurrent.FutureTask. #()) 1))
   (frm (fn [] (set! *warn-on-reflection* true)))
+
+  (-> (analyze-form (with-meta {} {:foo 1}))
+      emit-form)
 )

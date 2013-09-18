@@ -1,7 +1,8 @@
 (ns clojure.tools.analyzer.test.analyzer
   (:refer-clojure :exclude [macroexpand])
   (:require [clojure.test :refer :all]
-            [clojure.tools.analyzer :refer :all]))
+            [clojure.tools.analyzer :refer :all]
+            [clojure.tools.analyzer.emit-form :refer [emit-form]]))
 
 (deftest test-ast
   (is (= (-> (ast 1) :op)
@@ -29,3 +30,9 @@
 
 (deftest records-test
   (is (analyze-ns 'clojure.tools.analyzer.test.records)))
+(deftest meta-op-test
+  (is (= (-> (with-meta {} {:a 1})
+             analyze-form 
+             emit-form
+             meta)
+         {:a 1})))
