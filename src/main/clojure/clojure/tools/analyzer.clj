@@ -613,13 +613,14 @@
          :internal-name (.internalName expr)
          :this-name (.thisName expr)
 
-         ;(ISeq LocalBinding)
-         :fields (doall
+         ;(Set LocalBinding)
+         :fields (set
                    (for [[k v] (field Compiler$ObjExpr fields expr)]
                      (analysis->map v env opt)))
-         
-         :covariants (field Compiler$NewInstanceExpr covariants expr)
 
+         ;(Vec Symbol)
+         :hinted-fields (field Compiler$ObjExpr hintedFields expr)
+         :covariants (field Compiler$NewInstanceExpr covariants expr)
          :tag (.tag expr)}
         (when (:children opt)
           {:children [[[:methods] {:exprs? true}]]})
