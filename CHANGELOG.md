@@ -1,6 +1,7 @@
 # Changelog
 
 0.5.1 - Released 22 September 2013
+
 BREAKING CHANGES
 - Change interface to analyze-ns
   - takes a namespace symbol and options. See docstring
@@ -24,6 +25,7 @@ ENHANCEMENTS
 - Increment minor version because of breaking changes to :children
 
 0.3.5
+
 BREAKING CHANGES
 - Eliminate CHILDREN and JAVA-OBJ global state
   - AST ops now accept an optional map of options
