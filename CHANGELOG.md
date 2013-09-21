@@ -1,6 +1,6 @@
 # Changelog
 
-0.5.0 - Released 22 September 2013
+0.5.1 - Released 22 September 2013
 BREAKING CHANGES
 - Change interface to analyze-ns
   - takes a namespace symbol and options. See docstring
