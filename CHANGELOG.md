@@ -8,6 +8,7 @@ BREAKING CHANGES
 ENHANCEMENTS
 - add hinted fields to deftype*
 - add analyze-file
+- add :source-path to env, the current file being analyzed
 
 0.4.3
 - Support Clojurescript
