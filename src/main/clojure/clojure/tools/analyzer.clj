@@ -18,9 +18,8 @@
             [clojure.java.io :as io]
             [clojure.repl :as repl]
             [clojure.string :as string]
-            [clojure.tools.analyzer
-             [util :as util]
-             [emit-form :as emit-form]]))
+            [clojure.tools.analyzer.util :as util]
+            [clojure.tools.analyzer.emit-form :as emit-form]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interface
@@ -854,15 +853,18 @@
       (let [form (read rdr nil eof)]
         (when-not (identical? form eof)
           (lazy-seq (cons form (forms-seq rdr))))))))
+
+(defn ^:private munge-ns [ns-sym]
+  (-> (name ns-sym)
+      (string/replace "." "/")
+      (string/replace "-" "_")
+      (str ".clj")))
        
 (defn uri-for-ns 
   "Returns a URI representing the namespace. Throws an
   exception if URI not found."
   [ns-sym]
-  (let [source-path (-> (name ns-sym)
-                      (string/replace "." "/")
-                      (string/replace "-" "_")
-                      (str ".clj"))
+  (let [source-path (munge-ns ns-sym) 
         uri (io/resource source-path)]
     (when-not uri
       (throw (Exception. (str "No file found for namespace " ns-sym))))
@@ -900,15 +902,19 @@
      ~(when (RT-members 'DATA_READERS)
         `{RT/DATA_READERS @RT/DATA_READERS})))
 
+;(defn analyze-file
+;  ([source-path opt] (analyze-file source-path opt :reader (io/resource source-path)))
+;  ([source-path opt & {:keys [reader]}]
+
 (defn analyze-ns
   "Takes a LineNumberingPushbackReader and a namespace symbol.
   Returns a vector of maps, with keys :op, :env. If expressions
   have children, will have :children entry.
 
-  eg. (analyze-path (pb-reader-for-ns 'my.ns) 'my-ns 'my-ns)"
-  ([source-nsym] (analyze-ns (pb-reader-for-ns source-nsym) source-nsym source-nsym))
-  ([source-nsym opt] (analyze-ns (pb-reader-for-ns source-nsym) source-nsym source-nsym opt))
-  ([rdr source-path source-nsym] (analyze-ns rdr source-path source-nsym {}))
+  eg. (analyze-ns 'my-ns)"
+  ([source-nsym] (analyze-ns (pb-reader-for-ns source-nsym) source-nsym {}))
+  ([source-nsym opt] (analyze-ns (pb-reader-for-ns source-nsym) (munge-ns source-nsym) source-nsym opt))
+  ([rdr source-nsym opt] (analyze-ns rdr (munge-ns source-nsym) source-nsym {}))
   ([rdr source-path source-nsym opt]
    (let [eof (reify)
          ^LineNumberingPushbackReader 
@@ -923,8 +929,9 @@
                   out []]
              (if (identical? form eof)
                out
-               ;; FIXME shouldn't be source-nsym here
-               (let [env {:ns {:name (-> @RT/CURRENT_NS str symbol)} :locals {}}
+               (let [env {:ns {:name (-> @RT/CURRENT_NS str symbol)}
+                          :source-path source-path
+                          :locals {}}
                      expr-ast (Compiler/analyze (keyword->Context :eval) form)
                      m (analysis->map expr-ast env opt)
                      _ (method-accessor Compiler$Expr 'eval expr-ast [])]

@@ -30,6 +30,11 @@
 
 (deftest records-test
   (is (analyze-ns 'clojure.tools.analyzer.test.records)))
+
+(deftest source-name-test
+  (is (-> (analyze-ns 'clojure.tools.analyzer.test.records)
+          first :env :source-path str)))
+
 (deftest meta-op-test
   (is (= (-> (with-meta {} {:a 1})
              analyze-form 
