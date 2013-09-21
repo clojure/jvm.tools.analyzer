@@ -881,11 +881,11 @@
 (defonce ^:private Compiler-members (set (map :name (:members (reflect/type-reflect RT)))))
 (defonce ^:private RT-members (set (map :name (:members (reflect/type-reflect RT)))))
 
-(defmacro ^:private thrd-bindings [source-path source-nsym pushback-reader]
+(defmacro ^:private analyzer-bindings [source-path pushback-reader]
   `(merge
      {Compiler/LOADER (RT/makeClassLoader)
       Compiler/SOURCE_PATH (str ~source-path)
-      Compiler/SOURCE (str ~source-nsym)
+      Compiler/SOURCE (str ~source-path)
       Compiler/METHOD nil
       Compiler/LOCAL_ENV nil
       Compiler/LOOP_LOCALS nil
@@ -903,42 +903,57 @@
      ~(when (RT-members 'DATA_READERS)
         `{RT/DATA_READERS @RT/DATA_READERS})))
 
-;(defn analyze-file
-;  ([source-path opt] (analyze-file source-path opt :reader (io/resource source-path)))
-;  ([source-path opt & {:keys [reader]}]
+(defn analyze-file
+  "Takes a file path and optionally a pushback reader.
+  Returns a vector of maps representing the ASTs of the forms
+  in the target file.
+
+  Options:
+  - :reader  a pushback reader to use to read the namespace forms
+  - :opt     a map of analyzer options
+    - :children
+      when true, include a :children key with all child expressions of each node
+    - :java-obj
+      when true, include a :java-obj key with the node's corresponding Java object
+
+  eg. (analyze-file \"my/ns.clj\")"
+  [source-path & {:keys [reader opt] 
+                  :or {reader (LineNumberingPushbackReader. (io/reader (io/resource source-path)))}}]
+  (let [eof (reify)
+        ^LineNumberingPushbackReader 
+        pushback-reader (if (instance? LineNumberingPushbackReader reader)
+                          reader
+                          (LineNumberingPushbackReader. reader))]
+    (with-bindings (analyzer-bindings source-path pushback-reader)
+      (loop [form (read pushback-reader nil eof)
+             out []]
+        (if (identical? form eof)
+          out
+          (let [env {:ns {:name (ns-name *ns*)}
+                     :source-path source-path
+                     :locals {}}
+                expr-ast (Compiler/analyze (keyword->Context :eval) form)
+                m (analysis->map expr-ast env opt)
+                _ (method-accessor Compiler$Expr 'eval expr-ast [])]
+            (recur (read pushback-reader nil eof) (conj out m))))))))
 
 (defn analyze-ns
   "Takes a LineNumberingPushbackReader and a namespace symbol.
   Returns a vector of maps, with keys :op, :env. If expressions
   have children, will have :children entry.
 
-  eg. (analyze-ns 'my-ns)"
-  ([source-nsym] (analyze-ns (pb-reader-for-ns source-nsym) source-nsym {}))
-  ([source-nsym opt] (analyze-ns (pb-reader-for-ns source-nsym) (munge-ns source-nsym) source-nsym opt))
-  ([rdr source-nsym opt] (analyze-ns rdr (munge-ns source-nsym) source-nsym {}))
-  ([rdr source-path source-nsym opt]
-   (let [eof (reify)
-         ^LineNumberingPushbackReader 
-         pushback-reader (if (instance? LineNumberingPushbackReader rdr)
-                           rdr
-                           (LineNumberingPushbackReader. rdr))]
-     (do
-       (push-thread-bindings (thrd-bindings source-path source-nsym pushback-reader))
-       (try
-         (let [eof (reify)]
-           (loop [form (read pushback-reader nil eof)
-                  out []]
-             (if (identical? form eof)
-               out
-               (let [env {:ns {:name (-> @RT/CURRENT_NS str symbol)}
-                          :source-path source-path
-                          :locals {}}
-                     expr-ast (Compiler/analyze (keyword->Context :eval) form)
-                     m (analysis->map expr-ast env opt)
-                     _ (method-accessor Compiler$Expr 'eval expr-ast [])]
-                 (recur (read pushback-reader nil eof) (conj out m))))))
-         (finally
-           (pop-thread-bindings)))))))
+  Options:
+  - :reader  a pushback reader to use to read the namespace forms
+  - :opt     a map of analyzer options
+    - :children
+      when true, include a :children key with all child expressions of each node
+    - :java-obj
+      when true, include a :java-obj key with the node's corresponding Java object
+
+  eg. (analyze-ns 'my-ns :opt {:children true} :reader (pb-reader-for-ns 'my.ns))"
+  [source-nsym & {:keys [reader opt] :or {reader (pb-reader-for-ns source-nsym)}}]
+  (let [source-path (munge-ns source-nsym)]
+    (analyze-file source-path :reader reader :opt opt)))
 
 
 (defn children 
