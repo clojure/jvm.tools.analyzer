@@ -14,6 +14,9 @@ Leiningen dependency information:
 
 ```clojure
 [org.clojure/jvm.tools.analyzer "0.5.1"]
+
+; for very recent releases
+:repositories {"sonatype-oss-public" "https://oss.sonatype.org/content/groups/public/"}
 ```
 
 Maven dependency information:
