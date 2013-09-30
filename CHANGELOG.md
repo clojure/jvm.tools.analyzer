@@ -1,5 +1,8 @@
 # Changelog
 
+0.5.2 - Released 1 October 2013
+- Fix expr-seq
+
 0.5.1 - Released 22 September 2013
 
 BREAKING CHANGES

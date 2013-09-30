@@ -8,12 +8,12 @@ Supports Clojure 1.4.0 or later.
 
 # Releases and Dependency Information
 
-Latest stable release is 0.5.1.
+Latest stable release is 0.5.2.
 
 Leiningen dependency information:
 
 ```clojure
-[org.clojure/jvm.tools.analyzer "0.5.1"]
+[org.clojure/jvm.tools.analyzer "0.5.2"]
 
 ; for very recent releases
 :repositories {"sonatype-oss-public" "https://oss.sonatype.org/content/groups/public/"}
@@ -25,7 +25,7 @@ Maven dependency information:
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>jvm.tools.analyzer</artifactId>
-  <version>0.5.1</version>
+  <version>0.5.2</version>
 </dependency>
 ```
 
