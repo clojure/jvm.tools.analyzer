@@ -1,6 +1,17 @@
 (ns clojure.tools.analyzer.util
   (:require [clojure.pprint :as pp]))
 
+(defn children 
+  "Returns a lazy sequence of the immediate children of the expr in
+  order of evaluation, where defined."
+  [expr]
+  (for [[path {:keys [exprs?]}] (:children expr)
+        :let [in (get-in expr path)]
+        child-expr (if exprs?
+                     in
+                     [in])]
+    child-expr))
+
 (defn- dissoc-rec 
   "Return expr with the keys dissociated"
   [obj & keys]
@@ -20,8 +31,8 @@
   "Given an expression, returns a lazy sequence of the expressions
   followed by its children (in a depth first manner)"
   [expr]
-  (tree-seq :children
-            :children
+  (tree-seq children
+            children
             expr))
 
 (comment

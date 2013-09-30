@@ -960,12 +960,7 @@
   "Returns a lazy sequence of the immediate children of the expr in
   order of evaluation, where defined."
   [expr]
-  (for [[path {:keys [exprs?]}] (:children expr)
-        :let [in (get-in expr path)]
-        child-expr (if exprs?
-                     in
-                     [in])]
-    child-expr))
+  (util/children expr))
 
 (comment
   (ast 
