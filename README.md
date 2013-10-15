@@ -29,6 +29,14 @@ Maven dependency information:
 </dependency>
 ```
 
+# Differences from tools.analyzer.jvm
+
+The tools.analyzer.* libraries are Clojure compilers/analyzers written in Clojure, with tools.analyzer.jvm
+targetting the JVM.
+
+This library jvm.tools.analyzer is a set of tools for manipulating the output of Compiler.java, the official
+Clojure compiler written in Java as of Clojure 1.5.
+
 # Caveats (of provided Clojure AST analysis)
 
 ## Implicit Evalutation
