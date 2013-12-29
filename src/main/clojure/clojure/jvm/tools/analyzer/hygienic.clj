@@ -1,9 +1,8 @@
-(ns clojure.tools.analyzer.hygienic
+(ns clojure.jvm.tools.analyzer.hygienic
   (:refer-clojure :exclude [macroexpand])
-  (:require [clojure.tools.analyzer
-             [fold :refer [derive-default-fold add-fold-case fold-expr]]
-             [emit-form :refer [map->form derive-emit-default]]]
-            [clojure.tools.analyzer :as ana]))
+  (:require [clojure.jvm.tools.analyzer.fold :refer [derive-default-fold add-fold-case fold-expr]]
+            [clojure.jvm.tools.analyzer.emit-form :refer [map->form derive-emit-default]]
+            [clojure.jvm.tools.analyzer :as ana]))
 
 (declare hygienic-emit hygienic-ast)
 
@@ -229,7 +228,7 @@
              :body hy-body))))
 
 (comment
-  (refer 'clojure.tools.analyzer :only '(ast))
+  (refer 'clojure.jvm.tools.analyzer :only '(ast))
   (-> (ast (let [a 1 a a b a a a] a)) ast-hy emit-hy)
 
   (-> (ast (fn a [a a] a)) ast-hy emit-hy)

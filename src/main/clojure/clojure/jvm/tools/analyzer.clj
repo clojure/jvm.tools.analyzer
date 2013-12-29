@@ -1,4 +1,4 @@
-(ns clojure.tools.analyzer
+(ns clojure.jvm.tools.analyzer
   "Interface to Compiler's analyze.
   Entry point `analyze-path` and `analyze-one`"
   (:refer-clojure :exclude [macroexpand])
@@ -18,11 +18,16 @@
             [clojure.java.io :as io]
             [clojure.repl :as repl]
             [clojure.string :as string]
-            [clojure.tools.analyzer.util :as util]
-            [clojure.tools.analyzer.emit-form :as emit-form]))
+            [clojure.jvm.tools.analyzer.util :as util]
+            [clojure.jvm.tools.analyzer.emit-form :as emit-form]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interface
+
+(def ^:dynamic *eval-ast* 
+  "If true, evaluate the output AST before returning.
+  Otherwise, AST is unevaluated. Defaults to true."
+  true)
 
 (declare analyze-one)
 
@@ -934,7 +939,8 @@
                      :locals {}}
                 expr-ast (Compiler/analyze (keyword->Context :eval) form)
                 m (analysis->map expr-ast env opt)
-                _ (method-accessor Compiler$Expr 'eval expr-ast [])]
+                _ (when *eval-ast*
+                    (method-accessor Compiler$Expr 'eval expr-ast []))]
             (recur (read pushback-reader nil eof) (conj out m))))))))
 
 (defn analyze-ns

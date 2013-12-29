@@ -1,4 +1,4 @@
-(ns clojure.tools.analyzer.util
+(ns clojure.jvm.tools.analyzer.util
   (:require [clojure.pprint :as pp]))
 
 (defn children 
@@ -16,10 +16,10 @@
   "Return expr with the keys dissociated"
   [obj & keys]
   (cond
-   (map? obj) (into {} (for [[key val] (apply dissoc obj keys)]
-                         [key (apply dissoc-rec val keys)]))
-   (sequential? obj) (map #(apply dissoc-rec % keys) obj)
-   :else obj))
+    (map? obj) (into {} (for [[key val] (apply dissoc obj keys)]
+                          [key (apply dissoc-rec val keys)]))
+    (sequential? obj) (map #(apply dissoc-rec % keys) obj)
+    :else obj))
 
 (defn print-expr
   "Pretty-prints expr, excluding supplied keys.
@@ -35,12 +35,13 @@
             children
             expr))
 
+
 (comment
-(use 'analyze.core)
-(print-expr
-  (analyze-one {:ns {:name 'clojure.core} :context :eval}
-               '(defn a
-                  ([^bytes b] ^Integer b)
-                  ([b c] c)))
-  :children :Expr-obj :ObjMethod-obj :LocalBinding-obj :env :BindingInit-obj)
+  (use 'analyze.core)
+  (print-expr
+    (analyze-one {:ns {:name 'clojure.core} :context :eval}
+                 '(defn a
+                    ([^bytes b] ^Integer b)
+                    ([b c] c)))
+    :children :Expr-obj :ObjMethod-obj :LocalBinding-obj :env :BindingInit-obj)
   )

@@ -1,8 +1,8 @@
-(ns clojure.tools.analyzer.test.analyzer
+(ns clojure.jvm.tools.analyzer.test.analyzer
   (:refer-clojure :exclude [macroexpand])
   (:require [clojure.test :refer :all]
-            [clojure.tools.analyzer :refer :all]
-            [clojure.tools.analyzer.emit-form :refer [emit-form]]))
+            [clojure.jvm.tools.analyzer :refer :all]
+            [clojure.jvm.tools.analyzer.emit-form :refer [emit-form]]))
 
 (deftest test-ast
   (is (= (-> (ast 1) :op)
@@ -26,13 +26,13 @@
                     require))
            :exprs last :var)
          #'clojure.core/require)) ;should be `clojure.set/intersection`
-  (is (analyze-ns 'clojure.tools.analyzer.test.require)))
+  (is (analyze-ns 'clojure.jvm.tools.analyzer.test.require)))
 
 (deftest records-test
-  (is (analyze-ns 'clojure.tools.analyzer.test.records)))
+  (is (analyze-ns 'clojure.jvm.tools.analyzer.test.records)))
 
 (deftest source-name-test
-  (is (-> (analyze-ns 'clojure.tools.analyzer.test.records)
+  (is (-> (analyze-ns 'clojure.jvm.tools.analyzer.test.records)
           first :env :source-path str)))
 
 (deftest meta-op-test

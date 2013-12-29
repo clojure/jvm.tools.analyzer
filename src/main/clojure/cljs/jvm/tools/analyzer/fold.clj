@@ -1,4 +1,4 @@
-(ns cljs.tools.analyzer.fold)
+(ns cljs.jvm.tools.analyzer.fold)
 
 (def fold-expr-default ::fold-expr)
 

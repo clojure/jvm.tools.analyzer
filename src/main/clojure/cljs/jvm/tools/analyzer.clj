@@ -1,4 +1,4 @@
-(ns cljs.tools.analyzer
+(ns cljs.jvm.tools.analyzer
   "Interface to Clojurescript's analyzer.
   Entry point `analyze-path` and `analyze-one`"
   (:require [cljs.analyzer :as ana]
@@ -8,6 +8,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interface
+
+(def ^:dynamic *eval-after-analysis* true)
 
 (defn ^:private empty-env-in-ns [nsym]
   (let [info (@ana/namespaces nsym)]

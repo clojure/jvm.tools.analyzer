@@ -1,4 +1,4 @@
-(ns cljs.tools.analyzer.emit-form
+(ns cljs.jvm.tools.analyzer.emit-form
   (:require [cljs.compiler]
             [cljs.analyzer :as ana]
             [cljs.core]
@@ -150,7 +150,7 @@
   form)
 
 (comment
-  (require '[cljs.tools.analyzer :refer [ast]])
+  (require '[cljs.jvm.tools.analyzer :refer [ast]])
   (defmacro frm [f]
     `(-> (ast ~f) emit-form))
 

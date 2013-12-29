@@ -1,4 +1,4 @@
-(ns clojure.tools.analyzer.emit-form
+(ns clojure.jvm.tools.analyzer.emit-form
   (:import (clojure.lang Var)))
 
 (def emit-default ::emit-default)
@@ -206,7 +206,7 @@
 (comment
   (defmacro frm [f]
     `(-> (ast ~f) emit-form))
-  (require '[clojure.tools.analyzer :refer [ast analyze-form]])
+  (require '[clojure.jvm.tools.analyzer :refer [ast analyze-form]])
 
   (frm 1)
   (frm :a)

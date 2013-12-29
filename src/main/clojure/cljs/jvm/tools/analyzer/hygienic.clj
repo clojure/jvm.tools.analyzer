@@ -1,8 +1,8 @@
-(ns cljs.tools.analyzer.hygienic
+(ns cljs.jvm.tools.analyzer.hygienic
   (:refer-clojure :exclude [macroexpand])
-  (:require [cljs.tools.analyzer.fold :refer [derive-default-fold add-fold-case fold-expr]]
-            [cljs.tools.analyzer.emit-form :as emit :refer [map->form derive-emit-default]]
-            [cljs.tools.analyzer :as ana]
+  (:require [cljs.jvm.tools.analyzer.fold :refer [derive-default-fold add-fold-case fold-expr]]
+            [cljs.jvm.tools.analyzer.emit-form :as emit :refer [map->form derive-emit-default]]
+            [cljs.jvm.tools.analyzer :as ana]
             [cljs.analyzer]
             [cljs.compiler]
             [cljs.core]))
@@ -187,7 +187,7 @@
              :expr hy-body))))
 
 (comment
-  (require '[cljs.tools.analyzer :refer [ast]])
+  (require '[cljs.jvm.tools.analyzer :refer [ast]])
   (require '[cljs.repl.reflect :as repl])
   (-> (ast (let [a 1] a)) ast-hy emit-hy)
   (-> (ast (let [a 1 a a b a a a] a)) ast-hy emit/emit-form)

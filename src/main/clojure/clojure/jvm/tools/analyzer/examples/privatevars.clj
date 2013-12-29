@@ -1,5 +1,5 @@
-(ns clojure.tools.analyzer.examples.privatevars
-  (:require [clojure.tools.analyzer :as analyze]
+(ns clojure.jvm.tools.analyzer.examples.privatevars
+  (:require [clojure.jvm.tools.analyzer :as analyze]
             [clojure.set :as set]
             [clojure.pprint :as pp]))
 
@@ -41,7 +41,7 @@
          clojure.repl
          clojure.core.protocols
          clojure.template
-         clojure.tools.analyzer.examples.privatevars])))
+         clojure.jvm.tools.analyzer.examples.privatevars])))
 
 (doseq [exprs analyzed]
   (check-usage-of-private-vars exprs))
