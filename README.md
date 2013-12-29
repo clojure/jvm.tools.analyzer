@@ -8,12 +8,12 @@ Supports Clojure 1.4.0 or later.
 
 # Releases and Dependency Information
 
-Latest stable release is 0.5.2.
+Latest stable release is 0.6.0.
 
 Leiningen dependency information:
 
 ```clojure
-[org.clojure/jvm.tools.analyzer "0.5.2"]
+[org.clojure/jvm.tools.analyzer "0.6.0"]
 
 ; for very recent releases
 :repositories {"sonatype-oss-public" "https://oss.sonatype.org/content/groups/public/"}
@@ -25,7 +25,7 @@ Maven dependency information:
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>jvm.tools.analyzer</artifactId>
-  <version>0.5.2</version>
+  <version>0.6.0</version>
 </dependency>
 ```
 
@@ -69,7 +69,7 @@ has been made to conform to a ClojureScript-like AST. In practice, the main diff
 - several interop nodes (no :dot)
 - some ops/fields have different names
 
-I highly recommend browsing the implementation of `clojure.tools.analyzer` to check the current
+I highly recommend browsing the implementation of `clojure.jvm.tools.analyzer` to check the current
 state of the AST. It should be familiar if you have experience with the ClojureScript analyzer.
 
 # Usage (Clojure)
@@ -80,36 +80,36 @@ Note: Column numbers are only supported with Clojure 1.5.0 or later.
 
 ```clojure
 
-clojure.tools.analyzer=> (ast [1])
-{:op :constant, :env {:locals {}, :ns {:name clojure.tools.analyzer}}, :val [1]}
+clojure.jvm.tools.analyzer=> (ast [1])
+{:op :constant, :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}}, :val [1]}
 
-clojure.tools.analyzer=> (-> (ast (if true 1 2)) clojure.pprint/pprint)
+clojure.jvm.tools.analyzer=> (-> (ast (if true 1 2)) clojure.pprint/pprint)
 {:op :if,
  :env
  {:column 10,
   :line 4,
   :locals {},
-  :ns {:name clojure.tools.analyzer}},
+  :ns {:name clojure.jvm.tools.analyzer}},
  :test
  {:op :boolean,
-  :env {:locals {}, :ns {:name clojure.tools.analyzer}},
+  :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
   :val true},
  :then
  {:op :number,
-  :env {:locals {}, :ns {:name clojure.tools.analyzer}},
+  :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
   :val 1},
  :else
  {:op :number,
-  :env {:locals {}, :ns {:name clojure.tools.analyzer}},
+  :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
   :val 2}}
 nil
 
-clojure.tools.analyzer=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
+clojure.jvm.tools.analyzer=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
 {:op :fn-expr,
- :env {:line 5, :locals {}, :ns {:name clojure.tools.analyzer}},
+ :env {:line 5, :locals {}, :ns {:name clojure.jvm.tools.analyzer}},
  :methods
  ({:op :fn-method,
-   :env {:locals {}, :ns {:name clojure.tools.analyzer}},
+   :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
    :body
    {:op :do,
     :env
@@ -117,7 +117,7 @@ clojure.tools.analyzer=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
      :column 18,
      :line 5,
      :locals {},
-     :ns {:name clojure.tools.analyzer}},
+     :ns {:name clojure.jvm.tools.analyzer}},
     :exprs
     ({:op :static-method,
       :env
@@ -125,7 +125,7 @@ clojure.tools.analyzer=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
        :column 18,
        :line 5,
        :locals {},
-       :ns {:name clojure.tools.analyzer}},
+       :ns {:name clojure.jvm.tools.analyzer}},
       :class clojure.lang.Numbers,
       :method-name "add",
       :method
@@ -137,21 +137,21 @@ clojure.tools.analyzer=> (-> (ast (fn [x] (+ x 1))) clojure.pprint/pprint)
        :flags #{:static :public}},
       :args
       ({:op :local-binding-expr,
-        :env {:locals {}, :ns {:name clojure.tools.analyzer}},
+        :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
         :local-binding
         {:op :local-binding,
-         :env {:locals {}, :ns {:name clojure.tools.analyzer}},
+         :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
          :sym x,
          :tag nil,
          :init nil},
         :tag nil}
        {:op :number,
-        :env {:locals {}, :ns {:name clojure.tools.analyzer}},
+        :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
         :val 1}),
       :tag nil})},
    :required-params
    ({:op :local-binding,
-     :env {:locals {}, :ns {:name clojure.tools.analyzer}},
+     :env {:locals {}, :ns {:name clojure.jvm.tools.analyzer}},
      :sym x,
      :tag nil,
      :init nil}),
@@ -165,20 +165,20 @@ nil
 
 
 ```clojure
-clojure.tools.analyzer=> (require '[clojure.tools.analyzer.emit-form :as e])
+clojure.jvm.tools.analyzer=> (require '[clojure.jvm.tools.analyzer.emit-form :as e])
 nil
-clojure.tools.analyzer=> (-> (ast 1) e/emit-form)
+clojure.jvm.tools.analyzer=> (-> (ast 1) e/emit-form)
 1
-clojure.tools.analyzer=> (-> (ast [(+ 1 2)]) e/emit-form)
+clojure.jvm.tools.analyzer=> (-> (ast [(+ 1 2)]) e/emit-form)
 [(clojure.lang.Numbers/add 1 2)]
 ```
 
 # Macroexpander
 
-Use `clojure.tools.analyzer/macroexpand` as a substitute
+Use `clojure.jvm.tools.analyzer/macroexpand` as a substitute
 for `macroexpand` for fully macroexpanding forms.
 
-`clojure.tools.analyzer.hygienic/macroexpand` returns a hygienic form.
+`clojure.jvm.tools.analyzer.hygienic/macroexpand` returns a hygienic form.
 
 # Known Issues
 
@@ -220,22 +220,22 @@ analyses to `clojure.core/require`.
 # Usage (Clojurescript)
 
 All vars are identical to the Clojure implementation, where relevant,
-except the namespace prefix is `cljs.tools.analyzer` instead of
-`clojure.tools.analyzer`.
+except the namespace prefix is `cljs.jvm.tools.analyzer` instead of
+`clojure.jvm.tools.analyzer`.
 
 Some examples:
 
 Normal AST generation:
 
 ```clojure
-(cljs.tools.analyzer/ast 1)
+(cljs.jvm.tools.analyzer/ast 1)
 ;=> {:op :constant, :env {:ns {:defs {a {:column 18, :line 2, :file nil, :name cljs.user/a}}, :name cljs.user}, :context :statement, :locals {}}, :form 1}
 ```
 
 Hygienic transformation:
 
 ```clojure
-(cljs.tools.analyzer.hygienic/macroexpand
+(cljs.jvm.tools.analyzer.hygienic/macroexpand
   '(let [a 1 a a b a a a] a))
 ;=> (let* [a 1 a11306 a b a11306 a11307 a11306] (do a11307))
 ```
@@ -255,7 +255,7 @@ Hygienic transformation:
 
 # Examples
 
-See `clojure.tools.analyzer.examples.*` namespaces.
+See `clojure.jvm.tools.analyzer.examples.*` namespaces.
 
 # Contributors
 
