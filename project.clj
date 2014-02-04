@@ -25,6 +25,6 @@
   :profiles {:dev {:repl-options {:port 64363}}}
 
   :source-paths ["src/main/clojure"
-                 "../clojurescript/src/clj" 
-                 "../clojurescript/src/cljs"]
+                 #_"../clojurescript/src/clj" 
+                 #_"../clojurescript/src/cljs"]
   :test-paths ["src/test/clojure"])
