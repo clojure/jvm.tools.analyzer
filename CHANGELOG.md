@@ -1,3 +1,7 @@
+# 0.6.1
+
+- Upgrade ClojureScript to 0.0-2138
+
 # 0.6.0
 
 ## (MAJOR!) BREAKING CHANGES
