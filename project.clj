@@ -5,13 +5,13 @@
 
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/tools.trace "0.7.3"]
-                 ;[org.clojure/clojurescript "0.0-1806"]
+                 [org.clojure/clojurescript "0.0-2138"]
                  ; temporary deps for CLJS
-                 [com.google.javascript/closure-compiler "v20130603"]
-                 [org.clojure/google-closure-library "0.0-20130212-95c19e7f0f5f"]
-                 [org.clojure/data.json "0.2.2"]
-                 [org.mozilla/rhino "1.7R4"]
-                 [org.clojure/tools.reader "0.7.5"]
+                 #_[com.google.javascript/closure-compiler "v20130603"]
+                 #_[org.clojure/google-closure-library "0.0-20130212-95c19e7f0f5f"]
+                 #_[org.clojure/data.json "0.2.2"]
+                 #_[org.mozilla/rhino "1.7R4"]
+                 #_[org.clojure/tools.reader "0.7.5"]
 
                  ]
 
