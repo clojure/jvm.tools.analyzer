@@ -2,6 +2,7 @@
   "Interface to Clojurescript's analyzer.
   Entry point `analyze-path` and `analyze-one`"
   (:require [cljs.analyzer :as ana]
+            [cljs.util :as util]
             [cljs.compiler :as comp]
             [cljs.env :as env]
             [clojure.java.io :as io]))
@@ -36,7 +37,7 @@
   the namespace."
   [ns]
   (env/ensure
-    (let [f (ana/ns->relpath ns)
+    (let [f (util/ns->relpath ns)
           res (if (re-find #"^file://" f) (java.net.URL. f) (io/resource f))]
       (assert res (str "Can't find " f " in classpath"))
       (binding [ana/*cljs-ns* 'cljs.user

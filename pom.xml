@@ -31,7 +31,7 @@
           <testDeclareNamespacesOnly>false</testDeclareNamespacesOnly>
           <warnOnReflection>true</warnOnReflection>
           <namespaces>
-            <namespace>!cljs.tools.analyzer*</namespace>
+            <!--<namespace>!cljs.tools.analyzer*</namespace>-->
           </namespaces>
 
         </configuration>
@@ -55,12 +55,12 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure</artifactId>
-      <version>1.4.0</version>
+      <version>1.8.0</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojurescript</artifactId>
-      <version>0.0-2138</version>
+      <version>1.9.227</version>
     </dependency>
   </dependencies>
 

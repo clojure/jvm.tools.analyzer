@@ -8,7 +8,7 @@
          (.endsWith s "*"))))
 
 (defn check-def [expr]
-  (let [v (:var expr)
+  (let [^clojure.lang.Var v (:var expr)
         s (.sym v)]
     (when (and (earmuffed? s)
                (not (:is-dynamic expr)))

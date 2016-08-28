@@ -3,9 +3,9 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
-  :dependencies [[org.clojure/clojure "1.5.1"]
+  :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/tools.trace "0.7.3"]
-                 [org.clojure/clojurescript "0.0-2138"]
+                 [org.clojure/clojurescript "1.9.227"]
                  ; temporary deps for CLJS
                  #_[com.google.javascript/closure-compiler "v20130603"]
                  #_[org.clojure/google-closure-library "0.0-20130212-95c19e7f0f5f"]
