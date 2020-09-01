@@ -10,6 +10,11 @@ Supports Clojure 1.4.0 or later.
 
 Latest stable release is 0.6.1.
 
+[CLI/`deps.edn`](https://clojure.org/reference/deps_and_cli) dependency information:
+```clojure
+org.clojure/jvm.tools.analyzer {:mvn/version "0.6.1"}
+```
+
 Leiningen dependency information:
 
 ```clojure
