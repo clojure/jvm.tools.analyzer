@@ -249,8 +249,7 @@ Hygienic transformation:
 
 - [Github Project](https://github.com/clojure/jvm.tools.analyzer)
 - [Bug Tracker](http://dev.clojure.org/jira/browse/JVMTA)
-- [Continuous Integration](http://build.clojure.org/job/jvm.tools.analyzer/)
-- [Compatibility Test Matrix](http://build.clojure.org/job/jvm.tools.analyzer-test-matrix/)
+- [Continuous Integration](https://github.com/clojure/jvm.tools.analyzer/actions/workflows/test.yml)
 
 # Todo
 
